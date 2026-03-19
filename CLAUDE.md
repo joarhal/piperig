@@ -38,3 +38,16 @@ internal/
 10. **Job is a file path.** Resolved relative to cwd. Execution method determined by extension (`.py` → python, `.sh` → bash, no extension → direct exec).
 11. **`with` not `props`.** Parameters passed to jobs are called `with` in pipe YAML.
 12. **Call is the central type.** Everything either produces Calls (expand) or consumes them (runner, check).
+
+## Commits
+
+1. **Atomic.** One logical change per commit. Don't mix refactoring with new features.
+2. **Conventional Commits format.** `type(scope): description` — types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`. Scope is the package name (`pipe`, `timeexpr`, `expand`, etc.) or `cli` for cmd/.
+3. **Imperative mood.** "add parser" not "added parser".
+4. **Body when needed.** If the change isn't obvious from the title, add a blank line and a short body explaining _why_.
+5. **Co-author.** Every commit includes `Co-Authored-By` for all contributors.
+6. **English only.** Commit messages in English.
+
+# ExecPlans
+
+When writing complex features or significant refactors, use an ExecPlan (as described in docs/plans/PLANS.md) from design to implementation.
