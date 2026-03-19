@@ -11,6 +11,7 @@ import (
 	"github.com/joarhal/piperig/internal/config"
 	"github.com/joarhal/piperig/internal/expand"
 	"github.com/joarhal/piperig/internal/output"
+	"github.com/joarhal/piperig/internal/picker"
 	"github.com/joarhal/piperig/internal/pipe"
 	"github.com/joarhal/piperig/internal/runner"
 	"github.com/joarhal/piperig/internal/scheduler"
@@ -74,8 +75,15 @@ func parseArgs(args []string) (target string, overrides map[string]string) {
 func cmdRun(args []string) int {
 	target, overrides := parseArgs(args)
 	if target == "" {
-		fmt.Fprintln(os.Stderr, "usage: piperig run <file.pipe.yaml|dir> [key=value ...]")
-		return 1
+		result, err := picker.Pick()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+			return 1
+		}
+		target = result.Target
+		if result.Mode == "check" {
+			return cmdCheck([]string{target})
+		}
 	}
 
 	cfg, err := config.Load()
