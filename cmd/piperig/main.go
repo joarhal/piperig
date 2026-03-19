@@ -13,6 +13,7 @@ import (
 	"github.com/joarhal/piperig/internal/output"
 	"github.com/joarhal/piperig/internal/pipe"
 	"github.com/joarhal/piperig/internal/runner"
+	"github.com/joarhal/piperig/internal/scheduler"
 	"github.com/joarhal/piperig/internal/validate"
 )
 
@@ -29,6 +30,8 @@ func main() {
 		os.Exit(cmdRun(os.Args[2:]))
 	case "check":
 		os.Exit(cmdCheck(os.Args[2:]))
+	case "serve":
+		os.Exit(cmdServe(os.Args[2:]))
 	case "init":
 		os.Exit(cmdInit())
 	case "new":
@@ -47,6 +50,7 @@ func usage() {
 	fmt.Fprintln(os.Stderr, `Usage:
   piperig run <file.pipe.yaml|dir> [key=value ...]
   piperig check <file.pipe.yaml|dir> [key=value ...]
+  piperig serve <schedule.yaml> [--now]
   piperig init
   piperig new pipe|schedule <name>
   piperig version`)
@@ -283,6 +287,64 @@ steps:
 		fmt.Fprintf(os.Stderr, "unknown template kind: %s (use pipe or schedule)\n", kind)
 		return 1
 	}
+}
+
+func cmdServe(args []string) int {
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "usage: piperig serve <schedule.yaml> [--now]")
+		return 1
+	}
+
+	schedFile := args[0]
+	nowMode := false
+	for _, a := range args[1:] {
+		if a == "--now" {
+			nowMode = true
+		}
+	}
+
+	entries, err := scheduler.LoadSchedule(schedFile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "load schedule: %v\n", err)
+		return 1
+	}
+
+	errs := scheduler.ValidateEntries(entries)
+	if len(errs) > 0 {
+		for _, e := range errs {
+			fmt.Fprintln(os.Stderr, e)
+		}
+		return 2
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "config: %v\n", err)
+		return 1
+	}
+
+	w := output.New(os.Stdout, output.StdoutIsTerminal())
+
+	if nowMode {
+		if err := scheduler.ServeNow(entries, cfg, w); err != nil {
+			if _, ok := err.(*pipe.ValidationError); ok {
+				fmt.Fprintln(os.Stderr, err)
+				return 2
+			}
+			return 1
+		}
+		return 0
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	fmt.Printf("piperig serve: %d schedule entries\n", len(entries))
+	if err := scheduler.Serve(ctx, entries, cfg, w); err != nil {
+		fmt.Fprintf(os.Stderr, "serve: %v\n", err)
+		return 1
+	}
+	return 0
 }
 
 func resolvePaths(target string) ([]string, int) {
