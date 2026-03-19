@@ -2,6 +2,7 @@ package picker
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -72,8 +73,9 @@ func collectItems() ([]item, error) {
 	var files []item
 	dirs := make(map[string]bool)
 
+	cwd, _ := os.Getwd()
 	for _, p := range paths {
-		rel, err := filepath.Rel(".", p)
+		rel, err := filepath.Rel(cwd, p)
 		if err != nil {
 			rel = p
 		}
