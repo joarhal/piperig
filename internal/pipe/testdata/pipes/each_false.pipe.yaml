@@ -1,0 +1,6 @@
+each:
+  - { size: 1920x1080 }
+  - { size: 128x128 }
+steps:
+  - job: scripts/resize.py
+    each: false

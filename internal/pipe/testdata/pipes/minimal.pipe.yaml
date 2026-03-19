@@ -1,0 +1,2 @@
+steps:
+  - job: scripts/example.py

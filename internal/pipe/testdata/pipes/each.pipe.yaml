@@ -1,0 +1,6 @@
+each:
+  - { size: 1920x1080, label: fullhd }
+  - { size: 1280x720, label: hd }
+  - { size: 128x128, label: thumb }
+steps:
+  - job: scripts/resize.py

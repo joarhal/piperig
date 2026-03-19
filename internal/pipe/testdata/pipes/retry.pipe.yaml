@@ -1,0 +1,7 @@
+retry: 3
+retry_delay: 5s
+steps:
+  - job: scripts/resize.py
+    retry: 5
+  - job: scripts/notify.sh
+    retry: false

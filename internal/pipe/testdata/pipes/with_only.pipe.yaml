@@ -1,0 +1,11 @@
+description: Test pipe with params
+with:
+  src: /data/photos
+  quality: 80
+  enabled: true
+  ratio: 0.5
+log:
+  - label
+  - file
+steps:
+  - job: scripts/resize.py
