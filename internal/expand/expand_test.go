@@ -1,0 +1,621 @@
+package expand
+
+import (
+	"testing"
+	"time"
+
+	"github.com/joarhal/piperig/internal/pipe"
+)
+
+var now = time.Date(2026, 3, 19, 11, 43, 25, 0, time.UTC)
+
+func intPtr(n int) *int { return &n }
+
+func TestWithOnly(t *testing.T) {
+	p := &pipe.Pipe{
+		With: pipe.StringMap{"src": "/data", "quality": "80"},
+		Steps: []pipe.Step{
+			{Job: "scripts/resize.py"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Steps) != 1 {
+		t.Fatalf("steps: got %d, want 1", len(plan.Steps))
+	}
+	if len(plan.Steps[0].Calls) != 1 {
+		t.Fatalf("calls: got %d, want 1", len(plan.Steps[0].Calls))
+	}
+	call := plan.Steps[0].Calls[0]
+	if call.Params["src"] != "/data" {
+		t.Errorf("src = %q", call.Params["src"])
+	}
+	if call.Params["quality"] != "80" {
+		t.Errorf("quality = %q", call.Params["quality"])
+	}
+}
+
+func TestStepWithOverridesPipeWith(t *testing.T) {
+	p := &pipe.Pipe{
+		With: pipe.StringMap{"quality": "80"},
+		Steps: []pipe.Step{
+			{Job: "scripts/resize.py", With: pipe.StringMap{"quality": "100"}},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].Calls[0].Params["quality"] != "100" {
+		t.Errorf("quality = %q, want 100", plan.Steps[0].Calls[0].Params["quality"])
+	}
+}
+
+func TestLoopTimeRange(t *testing.T) {
+	p := &pipe.Pipe{
+		Steps: []pipe.Step{
+			{Job: "scripts/download.sh", Loop: map[string]any{"date": "-2d..-1d"}},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	calls := plan.Steps[0].Calls
+	if len(calls) != 2 {
+		t.Fatalf("calls: got %d, want 2", len(calls))
+	}
+	if calls[0].Params["date"] != "2026-03-17" {
+		t.Errorf("call[0].date = %q", calls[0].Params["date"])
+	}
+	if calls[1].Params["date"] != "2026-03-18" {
+		t.Errorf("call[1].date = %q", calls[1].Params["date"])
+	}
+}
+
+func TestLoopNumericRange(t *testing.T) {
+	p := &pipe.Pipe{
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh", Loop: map[string]any{"n": "1..3"}},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	calls := plan.Steps[0].Calls
+	if len(calls) != 3 {
+		t.Fatalf("calls: got %d, want 3", len(calls))
+	}
+	for i, want := range []string{"1", "2", "3"} {
+		if calls[i].Params["n"] != want {
+			t.Errorf("call[%d].n = %q, want %q", i, calls[i].Params["n"], want)
+		}
+	}
+}
+
+func TestLoopExplicitList(t *testing.T) {
+	p := &pipe.Pipe{
+		Steps: []pipe.Step{
+			{Job: "scripts/deploy.sh", Loop: map[string]any{"region": []any{"eu", "us"}}},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Steps[0].Calls) != 2 {
+		t.Fatalf("calls: got %d, want 2", len(plan.Steps[0].Calls))
+	}
+}
+
+func TestLoopMultiKeyCartesian(t *testing.T) {
+	p := &pipe.Pipe{
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh", Loop: map[string]any{
+				"date":   "-2d..-1d",
+				"region": []any{"eu", "us"},
+			}},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 2 dates × 2 regions = 4
+	if len(plan.Steps[0].Calls) != 4 {
+		t.Fatalf("calls: got %d, want 4", len(plan.Steps[0].Calls))
+	}
+}
+
+func TestEachBasic(t *testing.T) {
+	p := &pipe.Pipe{
+		Each: []pipe.StringMap{
+			{"a": "1"},
+			{"a": "2"},
+		},
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	calls := plan.Steps[0].Calls
+	if len(calls) != 2 {
+		t.Fatalf("calls: got %d, want 2", len(calls))
+	}
+	if calls[0].Params["a"] != "1" {
+		t.Errorf("call[0].a = %q", calls[0].Params["a"])
+	}
+}
+
+func TestEachSparseKeys(t *testing.T) {
+	p := &pipe.Pipe{
+		Each: []pipe.StringMap{
+			{"a": "1", "b": "2"},
+			{"a": "3"},
+		},
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	calls := plan.Steps[0].Calls
+	if calls[0].Params["b"] != "2" {
+		t.Errorf("call[0].b = %q, want 2", calls[0].Params["b"])
+	}
+	if _, ok := calls[1].Params["b"]; ok {
+		t.Errorf("call[1] should not have key b, got %q", calls[1].Params["b"])
+	}
+}
+
+func TestEachTimesLoop(t *testing.T) {
+	p := &pipe.Pipe{
+		Each: []pipe.StringMap{
+			{"size": "1920x1080"},
+			{"size": "128x128"},
+		},
+		Loop: map[string]any{"date": "-3d..-1d"},
+		Steps: []pipe.Step{
+			{Job: "scripts/resize.py"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 2 each × 3 dates = 6
+	if len(plan.Steps[0].Calls) != 6 {
+		t.Fatalf("calls: got %d, want 6", len(plan.Steps[0].Calls))
+	}
+}
+
+func TestEachFalse(t *testing.T) {
+	p := &pipe.Pipe{
+		Each: []pipe.StringMap{
+			{"size": "1920x1080"},
+			{"size": "128x128"},
+		},
+		Loop: map[string]any{"date": "-2d..-1d"},
+		Steps: []pipe.Step{
+			{Job: "scripts/download.sh", EachOff: true},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// No each, 2 dates = 2
+	if len(plan.Steps[0].Calls) != 2 {
+		t.Fatalf("calls: got %d, want 2", len(plan.Steps[0].Calls))
+	}
+}
+
+func TestLoopFalse(t *testing.T) {
+	p := &pipe.Pipe{
+		Each: []pipe.StringMap{
+			{"size": "1920x1080"},
+			{"size": "128x128"},
+		},
+		Loop: map[string]any{"date": "-2d..-1d"},
+		Steps: []pipe.Step{
+			{Job: "scripts/resize.py", LoopOff: true},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 2 each, no loop = 2
+	if len(plan.Steps[0].Calls) != 2 {
+		t.Fatalf("calls: got %d, want 2", len(plan.Steps[0].Calls))
+	}
+}
+
+func TestBothOff(t *testing.T) {
+	p := &pipe.Pipe{
+		Each: []pipe.StringMap{{"size": "1920x1080"}},
+		Loop: map[string]any{"date": "-2d..-1d"},
+		Steps: []pipe.Step{
+			{Job: "scripts/upload.sh", EachOff: true, LoopOff: true},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Steps[0].Calls) != 1 {
+		t.Fatalf("calls: got %d, want 1", len(plan.Steps[0].Calls))
+	}
+}
+
+func TestStepLevelLoopReplacesParent(t *testing.T) {
+	p := &pipe.Pipe{
+		Loop: map[string]any{"date": "-2d..-1d"},
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh", Loop: map[string]any{"n": "1..3"}},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Step loop replaces parent: 3 calls, not 2
+	calls := plan.Steps[0].Calls
+	if len(calls) != 3 {
+		t.Fatalf("calls: got %d, want 3", len(calls))
+	}
+	if _, ok := calls[0].Params["date"]; ok {
+		t.Error("should not have parent loop key 'date'")
+	}
+	if calls[0].Params["n"] != "1" {
+		t.Errorf("n = %q, want 1", calls[0].Params["n"])
+	}
+}
+
+func TestNestedPipe(t *testing.T) {
+	p := &pipe.Pipe{
+		With: pipe.StringMap{"src": "/data"},
+		Loop: map[string]any{"date": "-2d..-1d"},
+		Steps: []pipe.Step{
+			{Job: "pipes/child.pipe.yaml", With: pipe.StringMap{"quality": "90"}},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Nested pipe: always 1 call, no loop expansion
+	if len(plan.Steps[0].Calls) != 1 {
+		t.Fatalf("calls: got %d, want 1", len(plan.Steps[0].Calls))
+	}
+	call := plan.Steps[0].Calls[0]
+	if call.Job != "pipes/child.pipe.yaml" {
+		t.Errorf("job = %q", call.Job)
+	}
+	if call.Params["src"] != "/data" {
+		t.Errorf("src = %q", call.Params["src"])
+	}
+	if call.Params["quality"] != "90" {
+		t.Errorf("quality = %q", call.Params["quality"])
+	}
+}
+
+func TestTemplateSubstitution(t *testing.T) {
+	p := &pipe.Pipe{
+		With: pipe.StringMap{"base": "/data/output"},
+		Each: []pipe.StringMap{
+			{"label": "fullhd"},
+		},
+		Loop: map[string]any{"date": "-1d..-1d"},
+		Steps: []pipe.Step{
+			{Job: "scripts/resize.py", With: pipe.StringMap{
+				"output": "{base}/{label}/{date}.jpg",
+			}},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	call := plan.Steps[0].Calls[0]
+	if call.Params["output"] != "/data/output/fullhd/2026-03-18.jpg" {
+		t.Errorf("output = %q", call.Params["output"])
+	}
+}
+
+func TestOverrideWins(t *testing.T) {
+	p := &pipe.Pipe{
+		With: pipe.StringMap{"quality": "80"},
+		Steps: []pipe.Step{
+			{Job: "scripts/resize.py", With: pipe.StringMap{"quality": "100"}},
+		},
+	}
+	overrides := map[string]string{"quality": "110"}
+	plan, err := Expand(p, overrides, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].Calls[0].Params["quality"] != "110" {
+		t.Errorf("quality = %q, want 110", plan.Steps[0].Calls[0].Params["quality"])
+	}
+}
+
+func TestTimeExprInWith(t *testing.T) {
+	p := &pipe.Pipe{
+		With: pipe.StringMap{"date": "-1d"},
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].Calls[0].Params["date"] != "2026-03-18" {
+		t.Errorf("date = %q", plan.Steps[0].Calls[0].Params["date"])
+	}
+}
+
+func TestTimeExprInEach(t *testing.T) {
+	p := &pipe.Pipe{
+		Each: []pipe.StringMap{
+			{"date": "-1d"},
+		},
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].Calls[0].Params["date"] != "2026-03-18" {
+		t.Errorf("date = %q", plan.Steps[0].Calls[0].Params["date"])
+	}
+}
+
+func TestNonTimeExprUnchanged(t *testing.T) {
+	p := &pipe.Pipe{
+		With: pipe.StringMap{"size": "1920x1080"},
+		Steps: []pipe.Step{
+			{Job: "scripts/resize.py"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].Calls[0].Params["size"] != "1920x1080" {
+		t.Errorf("size = %q", plan.Steps[0].Calls[0].Params["size"])
+	}
+}
+
+func TestInputModeDefault(t *testing.T) {
+	p := &pipe.Pipe{
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].Calls[0].Input != pipe.InputEnv {
+		t.Errorf("input = %q, want env", plan.Steps[0].Calls[0].Input)
+	}
+}
+
+func TestInputModePipeLevel(t *testing.T) {
+	p := &pipe.Pipe{
+		Input: pipe.InputJSON,
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].Calls[0].Input != pipe.InputJSON {
+		t.Errorf("input = %q, want json", plan.Steps[0].Calls[0].Input)
+	}
+}
+
+func TestInputModeStepOverrides(t *testing.T) {
+	p := &pipe.Pipe{
+		Input: pipe.InputJSON,
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh", Input: pipe.InputArgs},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].Calls[0].Input != pipe.InputArgs {
+		t.Errorf("input = %q, want args", plan.Steps[0].Calls[0].Input)
+	}
+}
+
+func TestRetryInherit(t *testing.T) {
+	p := &pipe.Pipe{
+		Retry: intPtr(3),
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].Retry != 3 {
+		t.Errorf("retry = %d, want 3", plan.Steps[0].Retry)
+	}
+}
+
+func TestRetryStepOverride(t *testing.T) {
+	p := &pipe.Pipe{
+		Retry: intPtr(3),
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh", Retry: intPtr(5)},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].Retry != 5 {
+		t.Errorf("retry = %d, want 5", plan.Steps[0].Retry)
+	}
+}
+
+func TestRetryOff(t *testing.T) {
+	p := &pipe.Pipe{
+		Retry: intPtr(3),
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh", RetryOff: true},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].Retry != 0 {
+		t.Errorf("retry = %d, want 0", plan.Steps[0].Retry)
+	}
+}
+
+func TestRetryDelayDefault(t *testing.T) {
+	p := &pipe.Pipe{
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].RetryDelay != time.Second {
+		t.Errorf("retry_delay = %v, want 1s", plan.Steps[0].RetryDelay)
+	}
+}
+
+func TestRetryDelayOverride(t *testing.T) {
+	p := &pipe.Pipe{
+		RetryDelay: "5s",
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh", RetryDelay: "10s"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].RetryDelay != 10*time.Second {
+		t.Errorf("retry_delay = %v, want 10s", plan.Steps[0].RetryDelay)
+	}
+}
+
+func TestTimeout(t *testing.T) {
+	p := &pipe.Pipe{
+		Timeout: "10m",
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh", Timeout: "30m"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].Timeout != 30*time.Minute {
+		t.Errorf("timeout = %v, want 30m", plan.Steps[0].Timeout)
+	}
+}
+
+func TestAllowFailure(t *testing.T) {
+	p := &pipe.Pipe{
+		Steps: []pipe.Step{
+			{Job: "scripts/notify.sh", AllowFailure: true},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !plan.Steps[0].AllowFailure {
+		t.Error("allow_failure = false, want true")
+	}
+}
+
+func TestDimsString(t *testing.T) {
+	p := &pipe.Pipe{
+		Each: []pipe.StringMap{
+			{"size": "1920x1080"},
+			{"size": "1280x720"},
+			{"size": "640x480"},
+			{"size": "128x128"},
+		},
+		Loop: map[string]any{"date": "-2d..-1d"},
+		Steps: []pipe.Step{
+			{Job: "scripts/resize.py"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dims := plan.Steps[0].Dims
+	if dims != "4 each × 2 date" {
+		t.Errorf("dims = %q, want %q", dims, "4 each × 2 date")
+	}
+}
+
+func TestTotalCalls(t *testing.T) {
+	p := &pipe.Pipe{
+		Each: []pipe.StringMap{
+			{"size": "1920x1080"},
+			{"size": "128x128"},
+		},
+		Loop: map[string]any{"date": "-2d..-1d"},
+		Steps: []pipe.Step{
+			{Job: "scripts/download.sh", EachOff: true},         // 2
+			{Job: "scripts/resize.py"},                           // 4
+			{Job: "scripts/upload.sh", EachOff: true, LoopOff: true}, // 1
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.TotalCalls() != 7 {
+		t.Errorf("total = %d, want 7", plan.TotalCalls())
+	}
+}
+
+func TestDescriptionAndLog(t *testing.T) {
+	p := &pipe.Pipe{
+		Description: "Test pipe",
+		Log:         []string{"label", "file"},
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Description != "Test pipe" {
+		t.Errorf("description = %q", plan.Description)
+	}
+	if len(plan.Log) != 2 || plan.Log[0] != "label" {
+		t.Errorf("log = %v", plan.Log)
+	}
+}
