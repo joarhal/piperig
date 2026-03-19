@@ -331,6 +331,30 @@ func TestTemplateSubstitution(t *testing.T) {
 	}
 }
 
+func TestTemplateSameKeyFromPipeWith(t *testing.T) {
+	// Step with: output_dir: "{output_dir}" should resolve from pipe-level with
+	p := &pipe.Pipe{
+		With: pipe.StringMap{"output_dir": "/tmp/demo"},
+		Steps: []pipe.Step{
+			{Job: "scripts/run.py", With: pipe.StringMap{
+				"output_dir":  "{output_dir}",
+				"report_file": "{output_dir}/report.txt",
+			}},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	call := plan.Steps[0].Calls[0]
+	if call.Params["output_dir"] != "/tmp/demo" {
+		t.Errorf("output_dir = %q, want /tmp/demo", call.Params["output_dir"])
+	}
+	if call.Params["report_file"] != "/tmp/demo/report.txt" {
+		t.Errorf("report_file = %q, want /tmp/demo/report.txt", call.Params["report_file"])
+	}
+}
+
 func TestOverrideWins(t *testing.T) {
 	p := &pipe.Pipe{
 		With: pipe.StringMap{"quality": "80"},

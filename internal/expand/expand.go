@@ -67,7 +67,6 @@ func expandStep(
 	// Nested pipe: 1 call, no expansion
 	if strings.HasSuffix(step.Job, ".pipe.yaml") {
 		params := mergeParams(pipeWith, stepWith, overrides)
-		params = substituteTemplates(params)
 		call := pipe.Call{
 			Job:    step.Job,
 			Params: params,
@@ -132,7 +131,6 @@ func expandStep(
 	for _, eachItem := range effEach {
 		for _, loopItem := range loopCombinations {
 			params := mergeParams(pipeWith, eachItem, loopItem, stepWith, overrides)
-			params = substituteTemplates(params)
 			calls = append(calls, pipe.Call{
 				Job:    step.Job,
 				Params: params,
@@ -294,23 +292,19 @@ func cartesian(keys []string, values [][]string) []map[string]string {
 }
 
 // mergeParams merges parameter maps in priority order (later wins).
+// Template substitution happens during merge: each layer's values are
+// substituted using the pool built from all previous layers. This means
+// step-level `with: output: "{base_dir}/out"` correctly resolves {base_dir}
+// from pipe-level with, even if the step doesn't define base_dir itself.
 func mergeParams(sources ...map[string]string) map[string]string {
-	result := make(map[string]string)
+	pool := make(map[string]string)
 	for _, src := range sources {
+		// Substitute templates in this layer using the pool so far
 		for k, v := range src {
-			result[k] = v
+			pool[k] = substituteValue(v, pool)
 		}
 	}
-	return result
-}
-
-// substituteTemplates replaces {key} references in param values.
-func substituteTemplates(params map[string]string) map[string]string {
-	result := make(map[string]string, len(params))
-	for k, v := range params {
-		result[k] = substituteValue(v, params)
-	}
-	return result
+	return pool
 }
 
 func substituteValue(val string, params map[string]string) string {
