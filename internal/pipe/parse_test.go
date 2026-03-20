@@ -2,6 +2,7 @@ package pipe
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -173,6 +174,66 @@ func TestLoadInputModes(t *testing.T) {
 	}
 	if p.Steps[1].Input != "" {
 		t.Errorf("step[1] input: got %q, want empty (inherit)", p.Steps[1].Input)
+	}
+}
+
+func TestLoadUnknownPipeKey(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bad.pipe.yaml")
+	if err := writeFile(path, "foo: bar\nsteps:\n  - job: scripts/example.py\n"); err != nil {
+		t.Fatal(err)
+	}
+	_, err := Load(path)
+	if err == nil {
+		t.Fatal("expected error for unknown pipe key")
+	}
+	if !strings.Contains(err.Error(), "unknown key") {
+		t.Errorf("error %q should contain %q", err, "unknown key")
+	}
+}
+
+func TestLoadUnknownStepKey(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bad.pipe.yaml")
+	if err := writeFile(path, "steps:\n  - job: scripts/example.py\n    bar: baz\n"); err != nil {
+		t.Fatal(err)
+	}
+	_, err := Load(path)
+	if err == nil {
+		t.Fatal("expected error for unknown step key")
+	}
+	if !strings.Contains(err.Error(), "unknown key") {
+		t.Errorf("error %q should contain %q", err, "unknown key")
+	}
+}
+
+func TestLoadNestedObjectInWith(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bad.pipe.yaml")
+	if err := writeFile(path, "with:\n  config:\n    nested: obj\nsteps:\n  - job: scripts/example.py\n"); err != nil {
+		t.Fatal(err)
+	}
+	_, err := Load(path)
+	if err == nil {
+		t.Fatal("expected error for nested object in with")
+	}
+	if !strings.Contains(err.Error(), "nested objects not allowed") {
+		t.Errorf("error %q should contain %q", err, "nested objects not allowed")
+	}
+}
+
+func TestLoadListInWith(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bad.pipe.yaml")
+	if err := writeFile(path, "with:\n  items:\n    - a\n    - b\nsteps:\n  - job: scripts/example.py\n"); err != nil {
+		t.Fatal(err)
+	}
+	_, err := Load(path)
+	if err == nil {
+		t.Fatal("expected error for list in with")
+	}
+	if !strings.Contains(err.Error(), "lists not allowed") {
+		t.Errorf("error %q should contain %q", err, "lists not allowed")
 	}
 }
 

@@ -16,17 +16,18 @@ const (
 type StringMap map[string]string
 
 // Pipe is the top-level structure parsed from a .pipe.yaml file.
+// Custom UnmarshalYAML rejects unknown keys.
 type Pipe struct {
-	Description string    `yaml:"description"`
-	With        StringMap `yaml:"with"`
-	Loop        map[string]any `yaml:"loop"`
-	Each        []StringMap    `yaml:"each"`
-	Input       InputMode `yaml:"input"`
-	Log         []string  `yaml:"log"`
-	Retry       *int      `yaml:"retry"`
-	RetryDelay  string    `yaml:"retry_delay"`
-	Timeout     string    `yaml:"timeout"`
-	Steps       []Step    `yaml:"steps"`
+	Description string         `yaml:"-"`
+	With        StringMap      `yaml:"-"`
+	Loop        map[string]any `yaml:"-"`
+	Each        []StringMap    `yaml:"-"`
+	Input       InputMode      `yaml:"-"`
+	Log         []string       `yaml:"-"`
+	Retry       *int           `yaml:"-"`
+	RetryDelay  string         `yaml:"-"`
+	Timeout     string         `yaml:"-"`
+	Steps       []Step         `yaml:"-"`
 }
 
 // Step is a single step within a pipe.
