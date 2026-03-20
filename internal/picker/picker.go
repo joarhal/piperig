@@ -48,7 +48,7 @@ func Pick() (*Result, error) {
 	}
 
 	m := model{all: items, filtered: items}
-	p := tea.NewProgram(m)
+	p := tea.NewProgram(m, tea.WithAltScreen())
 	final, err := p.Run()
 	if err != nil {
 		return nil, err
@@ -186,14 +186,19 @@ func (m *model) applyFilter() {
 func (m model) View() string {
 	var b strings.Builder
 
-	// Header with mode toggle
-	modeStr := ""
+	// Header
+	b.WriteString("\033[36m  ╭──────────╮\033[0m\n")
+	b.WriteString("\033[36m  │\033[0m \033[1;36mpiperig\033[0m  \033[36m│\033[0m\n")
+	b.WriteString("\033[36m  ╰──────────╯\033[0m\n\n")
+
+	// Mode toggle
+	var modeStr string
 	if m.mode == 0 {
-		modeStr = "[\033[1mrun\033[0m] check  ←/→"
+		modeStr = "  \033[7;1m run \033[0m  check   ←/→"
 	} else {
-		modeStr = "run [\033[1mcheck\033[0m]  ←/→"
+		modeStr = "  run  \033[7;1m check \033[0m  ←/→"
 	}
-	b.WriteString(fmt.Sprintf("  piperig run%s%s\n\n", strings.Repeat(" ", 40), modeStr))
+	b.WriteString(modeStr + "\n\n")
 
 	// Filter
 	if m.filter != "" {
