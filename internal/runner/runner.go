@@ -21,12 +21,17 @@ import (
 	"github.com/joarhal/piperig/internal/validate"
 )
 
+// maxNestedDepth is the maximum allowed depth for nested pipe execution.
+// This prevents infinite recursion when pipes reference each other cyclically.
+const maxNestedDepth = 10
+
 // Runner executes expanded plans by invoking subprocesses.
 type Runner struct {
 	Interpreters map[string]string
 	Output       *output.Writer
 	Now          time.Time
 	Config       *config.Config
+	Depth        int
 }
 
 // RunPlan executes all steps in a plan sequentially.
@@ -164,6 +169,12 @@ func (r *Runner) RunCall(ctx context.Context, call pipe.Call, timeout time.Durat
 }
 
 func (r *Runner) runNestedPipe(ctx context.Context, call pipe.Call) error {
+	r.Depth++
+	defer func() { r.Depth-- }()
+	if r.Depth > maxNestedDepth {
+		return fmt.Errorf("nested pipe depth limit exceeded (%d)", maxNestedDepth)
+	}
+
 	p, err := pipe.Load(call.Job)
 	if err != nil {
 		return &pipe.RunError{Job: call.Job, ExitCode: 1, Err: err}

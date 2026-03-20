@@ -245,6 +245,20 @@ func TestRunPlanSetsLog(t *testing.T) {
 	}
 }
 
+func TestRunNestedDepthLimit(t *testing.T) {
+	r, _ := newTestRunner()
+	err := r.RunCall(context.Background(), pipe.Call{
+		Job:   "testdata/pipes/self.pipe.yaml",
+		Input: pipe.InputEnv,
+	}, 0)
+	if err == nil {
+		t.Fatal("expected depth limit error")
+	}
+	if !strings.Contains(err.Error(), "nested pipe depth limit exceeded") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestDirectExecNoExtension(t *testing.T) {
 	// Create an executable without extension
 	dir := t.TempDir()
