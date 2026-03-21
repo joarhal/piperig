@@ -550,7 +550,7 @@ piperig new pipe pipes/daily/images      → pipes/daily/images.pipe.yaml
 piperig new schedule schedule                     → schedule.yaml
 ```
 
-Extension is added automatically (`.pipe.yaml` for pipe, `.yaml` for schedule). If the file already exists — error, no overwrite.
+Extension is added automatically (`.pipe.yaml` for pipe, `.yaml` for schedule). Parent directories are created automatically if they don't exist. If the file already exists — error, no overwrite.
 
 Pipe template:
 
