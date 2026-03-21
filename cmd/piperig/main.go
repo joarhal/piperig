@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/joarhal/piperig/internal/config"
+	"github.com/joarhal/piperig/internal/docs"
 	"github.com/joarhal/piperig/internal/expand"
 	"github.com/joarhal/piperig/internal/output"
 	"github.com/joarhal/piperig/internal/picker"
@@ -37,6 +38,9 @@ func main() {
 		os.Exit(cmdInit())
 	case "new":
 		os.Exit(cmdNew(os.Args[2:]))
+	case "llm":
+		fmt.Print(docs.README)
+		os.Exit(0)
 	case "version":
 		fmt.Println("piperig " + version)
 		os.Exit(0)
@@ -261,6 +265,9 @@ func cmdNew(args []string) int {
 			fmt.Fprintf(os.Stderr, "%s already exists\n", filename)
 			return 1
 		}
+		if dir := filepath.Dir(filename); dir != "." {
+			os.MkdirAll(dir, 0o755)
+		}
 		content := `description: ""
 
 steps:
@@ -278,6 +285,9 @@ steps:
 		if _, err := os.Stat(filename); err == nil {
 			fmt.Fprintf(os.Stderr, "%s already exists\n", filename)
 			return 1
+		}
+		if dir := filepath.Dir(filename); dir != "." {
+			os.MkdirAll(dir, 0o755)
 		}
 		content := `- name: daily
   cron: "0 5 * * *"

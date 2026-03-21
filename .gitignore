@@ -13,6 +13,9 @@ dist/
 *.swp
 *~
 
+# Generated
+internal/docs/README.md
+
 # Claude Code
 .claude/
 
