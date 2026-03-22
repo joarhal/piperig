@@ -1,0 +1,10 @@
+description: Test step-level log
+
+log:
+  - label
+  - file
+
+steps:
+  - job: scripts/resize.py
+  - job: scripts/upload.py
+    log: [file, status, url]

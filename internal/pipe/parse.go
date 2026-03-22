@@ -118,6 +118,10 @@ func (s *Step) UnmarshalYAML(node *yaml.Node) error {
 			}
 		case "input":
 			s.Input = InputMode(val.Value)
+		case "log":
+			if err := val.Decode(&s.Log); err != nil {
+				return fmt.Errorf("log: %w", err)
+			}
 		case "retry_delay":
 			s.RetryDelay = val.Value
 		case "timeout":

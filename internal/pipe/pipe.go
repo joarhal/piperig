@@ -41,6 +41,7 @@ type Step struct {
 	Each         []StringMap    `yaml:"-"`
 	EachOff      bool           `yaml:"-"`
 	Input        InputMode      `yaml:"input"`
+	Log          []string       `yaml:"-"`
 	Retry        *int           `yaml:"-"`
 	RetryOff     bool           `yaml:"-"`
 	RetryDelay   string         `yaml:"retry_delay"`
@@ -60,6 +61,7 @@ type StepPlan struct {
 	Job          string
 	Calls        []Call
 	Dims         string // e.g. "4 each × 2 dates" — for check output
+	Log          []string
 	Retry        int
 	RetryDelay   time.Duration
 	Timeout      time.Duration

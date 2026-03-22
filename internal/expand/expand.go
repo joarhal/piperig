@@ -75,6 +75,7 @@ func expandStep(
 		sp := &pipe.StepPlan{
 			Job:   step.Job,
 			Calls: []pipe.Call{call},
+			Log:   resolveLog(step, p),
 		}
 		applyPolicies(sp, step, p)
 		return sp, nil
@@ -143,6 +144,7 @@ func expandStep(
 		Job:   step.Job,
 		Calls: calls,
 		Dims:  dims,
+		Log:   resolveLog(step, p),
 	}
 	applyPolicies(sp, step, p)
 	return sp, nil
@@ -315,6 +317,13 @@ func substituteValue(val string, params map[string]string) string {
 		val = strings.ReplaceAll(val, "{"+k+"}", v)
 	}
 	return val
+}
+
+func resolveLog(step pipe.Step, p *pipe.Pipe) []string {
+	if step.Log != nil {
+		return step.Log
+	}
+	return p.Log
 }
 
 func resolveInput(step pipe.Step, p *pipe.Pipe) pipe.InputMode {

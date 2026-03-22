@@ -244,6 +244,25 @@ func TestLoadFileNotFound(t *testing.T) {
 	}
 }
 
+func TestLoadStepLog(t *testing.T) {
+	p, err := Load(testdataPath("step_log.pipe.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Pipe-level log
+	if len(p.Log) != 2 || p.Log[0] != "label" || p.Log[1] != "file" {
+		t.Errorf("pipe log = %v, want [label file]", p.Log)
+	}
+	// Step 0: no step-level log
+	if p.Steps[0].Log != nil {
+		t.Errorf("step 0 log = %v, want nil", p.Steps[0].Log)
+	}
+	// Step 1: step-level log overrides
+	if len(p.Steps[1].Log) != 3 || p.Steps[1].Log[0] != "file" {
+		t.Errorf("step 1 log = %v, want [file status url]", p.Steps[1].Log)
+	}
+}
+
 func TestLoadInvalidYAML(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bad.pipe.yaml")

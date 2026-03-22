@@ -662,13 +662,9 @@ Example output: `bash docs/log_example.sh`
 
 ### log — field selection for JSON formatting
 
-`log` — top-level output setting (not passed to the job). A list of fields from JSON lines in stdout. When a job outputs a JSON line, piperig extracts the specified fields and formats them with `|`:
+`log` — output setting (not passed to the job). A list of fields from JSON lines in stdout. When a job outputs a JSON line, piperig extracts the specified fields and formats them with `|`:
 
 ```yaml
-with:
-  src: /data/photos
-  quality: 80
-
 log:
   - label
   - file
@@ -677,6 +673,22 @@ log:
 steps:
   - job: scripts/resize.py
 ```
+
+`log` can be specified at pipe level (for all steps) or at step level (overrides):
+
+```yaml
+log:
+  - label
+  - file
+
+steps:
+  - job: scripts/resize.py                    # log from pipe
+  - job: scripts/upload.py
+    log: [file, status, url]                   # own log fields
+  - job: scripts/notify.sh                     # log from pipe
+```
+
+Step-level `log` completely replaces pipe-level `log` for that step.
 
 Without `log` — JSON lines are displayed as plain text (`·`).
 

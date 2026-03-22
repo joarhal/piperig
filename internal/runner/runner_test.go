@@ -231,10 +231,10 @@ func TestStderr(t *testing.T) {
 func TestRunPlanSetsLog(t *testing.T) {
 	r, _ := newTestRunner()
 	plan := &pipe.Plan{
-		Log: []string{"label", "file"},
 		Steps: []pipe.StepPlan{
 			{
 				Job:   scriptPath("exit0.sh"),
+				Log:   []string{"label", "file"},
 				Calls: []pipe.Call{{Job: scriptPath("exit0.sh"), Input: pipe.InputEnv}},
 			},
 		},
@@ -242,6 +242,31 @@ func TestRunPlanSetsLog(t *testing.T) {
 	_ = r.RunPlan(context.Background(), plan)
 	if len(r.Output.Log()) != 2 {
 		t.Errorf("expected log fields set, got %v", r.Output.Log())
+	}
+}
+
+func TestStepLogOverridesPipeLog(t *testing.T) {
+	r, buf := newTestRunner()
+	plan := &pipe.Plan{
+		Steps: []pipe.StepPlan{
+			{
+				Job:   scriptPath("json_lines.sh"),
+				Log:   []string{"label"},
+				Calls: []pipe.Call{{Job: scriptPath("json_lines.sh"), Input: pipe.InputEnv}},
+			},
+		},
+	}
+	err := r.RunPlan(context.Background(), plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	// Should have JSON marker with only "label" field
+	if !strings.Contains(out, "▸") {
+		t.Errorf("expected JSON marker ▸, got:\n%s", out)
+	}
+	if !strings.Contains(out, "fullhd") {
+		t.Errorf("expected 'fullhd' in output, got:\n%s", out)
 	}
 }
 

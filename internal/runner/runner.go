@@ -36,8 +36,6 @@ type Runner struct {
 
 // RunPlan executes all steps in a plan sequentially.
 func (r *Runner) RunPlan(ctx context.Context, plan *pipe.Plan) error {
-	r.Output.SetLog(plan.Log)
-
 	if plan.Name != "" {
 		r.Output.PipeHeader(plan.Name, plan.Description)
 	}
@@ -58,6 +56,8 @@ func (r *Runner) RunPlan(ctx context.Context, plan *pipe.Plan) error {
 
 // RunStep executes all calls in a step with retry and allow_failure handling.
 func (r *Runner) RunStep(ctx context.Context, step pipe.StepPlan) error {
+	r.Output.SetLog(step.Log)
+
 	for _, call := range step.Calls {
 		r.Output.Start(call.Job, call.Params)
 

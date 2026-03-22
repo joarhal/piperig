@@ -359,7 +359,7 @@ Parent `with` overrides child `with`. The child's own `loop`/`each` work as writ
 
 The recommended way to report progress from your scripts is to print JSON lines to stdout. This gives you clean, readable logs without any extra tooling.
 
-Declare `log` fields at the pipe level — piperig will extract them from each JSON line and format as a table:
+Declare `log` fields at pipe or step level — piperig will extract them from each JSON line and format as a table:
 
 ```yaml
 log:
