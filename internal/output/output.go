@@ -97,7 +97,7 @@ func (w *Writer) Start(job string, params map[string]string) {
 	}
 	ts := time.Now().Format("15:04:05")
 	if w.color {
-		fmt.Fprintf(w.w, "%s%s%s %s%s→ %s%s%s\n", dim, ts, reset, white, bold, job, paramStr, reset)
+		fmt.Fprintf(w.w, "%s%s%s %s%s→ %s%s%s%s%s\n", dim, ts, reset, white, bold, job, reset, dim, paramStr, reset)
 	} else {
 		fmt.Fprintf(w.w, "%s → %s%s\n", ts, job, paramStr)
 	}
