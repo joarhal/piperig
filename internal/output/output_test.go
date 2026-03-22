@@ -2,6 +2,7 @@ package output
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 	"time"
 
@@ -16,27 +17,31 @@ func newTestWriter() (*Writer, *bytes.Buffer) {
 func TestStart(t *testing.T) {
 	w, buf := newTestWriter()
 	w.Start("scripts/resize.py", map[string]string{"date": "2026-03-18", "size": "1920x1080"})
-	want := "→ scripts/resize.py  date=2026-03-18  size=1920x1080\n"
-	if buf.String() != want {
-		t.Errorf("got %q, want %q", buf.String(), want)
+	out := buf.String()
+	if !strings.Contains(out, "→ scripts/resize.py  date=2026-03-18  size=1920x1080") {
+		t.Errorf("got %q, want timestamp + → scripts/resize.py ...", out)
+	}
+	// Should have HH:MM:SS timestamp
+	if len(out) < 8 || out[2] != ':' || out[5] != ':' {
+		t.Errorf("expected HH:MM:SS timestamp prefix, got %q", out)
 	}
 }
 
 func TestStartNoParams(t *testing.T) {
 	w, buf := newTestWriter()
 	w.Start("scripts/run.sh", nil)
-	want := "→ scripts/run.sh\n"
-	if buf.String() != want {
-		t.Errorf("got %q, want %q", buf.String(), want)
+	out := buf.String()
+	if !strings.Contains(out, "→ scripts/run.sh") {
+		t.Errorf("got %q, want timestamp + → scripts/run.sh", out)
 	}
 }
 
 func TestText(t *testing.T) {
 	w, buf := newTestWriter()
 	w.Text("Resizing image...")
-	want := "  · Resizing image...\n"
-	if buf.String() != want {
-		t.Errorf("got %q, want %q", buf.String(), want)
+	out := buf.String()
+	if !strings.Contains(out, "· Resizing image...") {
+		t.Errorf("got %q, want indent + · Resizing image...", out)
 	}
 }
 
@@ -44,9 +49,9 @@ func TestJSON(t *testing.T) {
 	w, buf := newTestWriter()
 	w.SetLog([]string{"label", "file", "size"})
 	w.JSON(map[string]string{"label": "fullhd", "file": "photo_001.jpg", "size": "1920x1080"})
-	want := "  ▸ fullhd | photo_001.jpg | 1920x1080\n"
-	if buf.String() != want {
-		t.Errorf("got %q, want %q", buf.String(), want)
+	out := buf.String()
+	if !strings.Contains(out, "▸ fullhd | photo_001.jpg | 1920x1080") {
+		t.Errorf("got %q, want indent + ▸ fullhd | ...", out)
 	}
 }
 
@@ -54,45 +59,51 @@ func TestJSONMissingField(t *testing.T) {
 	w, buf := newTestWriter()
 	w.SetLog([]string{"label", "missing", "size"})
 	w.JSON(map[string]string{"label": "fullhd", "size": "1920x1080"})
-	want := "  ▸ fullhd | 1920x1080\n"
-	if buf.String() != want {
-		t.Errorf("got %q, want %q", buf.String(), want)
+	out := buf.String()
+	if !strings.Contains(out, "▸ fullhd | 1920x1080") {
+		t.Errorf("got %q, want indent + ▸ fullhd | 1920x1080", out)
 	}
 }
 
 func TestStderr(t *testing.T) {
 	w, buf := newTestWriter()
 	w.Stderr("Warning: EXIF data missing")
-	want := "  ! Warning: EXIF data missing\n"
-	if buf.String() != want {
-		t.Errorf("got %q, want %q", buf.String(), want)
+	out := buf.String()
+	if !strings.Contains(out, "! Warning: EXIF data missing") {
+		t.Errorf("got %q, want indent + ! Warning: EXIF data missing", out)
 	}
 }
 
 func TestRetry(t *testing.T) {
 	w, buf := newTestWriter()
 	w.Retry(1, 3, time.Second)
-	want := "  ↻ retry 1/3 (1s)\n"
-	if buf.String() != want {
-		t.Errorf("got %q, want %q", buf.String(), want)
+	out := buf.String()
+	if !strings.Contains(out, "↻ retry 1/3 (1s)") {
+		t.Errorf("got %q, want indent + ↻ retry 1/3 (1s)", out)
 	}
 }
 
 func TestOk(t *testing.T) {
 	w, buf := newTestWriter()
 	w.Ok("scripts/resize.py", 800*time.Millisecond)
-	want := "✓ scripts/resize.py  0.8s\n"
-	if buf.String() != want {
-		t.Errorf("got %q, want %q", buf.String(), want)
+	out := buf.String()
+	if !strings.Contains(out, "✓ scripts/resize.py  0.8s") {
+		t.Errorf("got %q, want timestamp + ✓ scripts/resize.py  0.8s", out)
+	}
+	if len(out) < 8 || out[2] != ':' || out[5] != ':' {
+		t.Errorf("expected HH:MM:SS timestamp prefix, got %q", out)
 	}
 }
 
 func TestFail(t *testing.T) {
 	w, buf := newTestWriter()
 	w.Fail("scripts/upload.sh", 1, 4100*time.Millisecond)
-	want := "✗ scripts/upload.sh  exit=1  4.1s\n"
-	if buf.String() != want {
-		t.Errorf("got %q, want %q", buf.String(), want)
+	out := buf.String()
+	if !strings.Contains(out, "✗ scripts/upload.sh  exit=1  4.1s") {
+		t.Errorf("got %q, want timestamp + ✗ scripts/upload.sh  exit=1  4.1s", out)
+	}
+	if len(out) < 8 || out[2] != ':' || out[5] != ':' {
+		t.Errorf("expected HH:MM:SS timestamp prefix, got %q", out)
 	}
 }
 

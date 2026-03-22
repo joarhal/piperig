@@ -608,40 +608,41 @@ Entries run independently. Within `run` — sequentially. If a pipe fails — st
 
 ## Output
 
-piperig formats output with icons and indentation. Each line from the job comes with indentation and an icon:
+piperig formats output with icons, timestamps, and indentation. Step start (`→`) and finish (`✓`/`✗`) lines include an `HH:MM:SS` timestamp. Intermediate lines (stdout, stderr, retry) are indented without a timestamp.
 
 ```
-→ scripts/resize.py  date=2026-03-18  size=1920x1080  label=fullhd
-  · Resizing image...
-  ▸ fullhd | photo_001.jpg | 1920x1080
-  · Applying sharpening filter...
-  ▸ fullhd | photo_001.jpg | sharpened
-  ! Warning: EXIF data missing
-  · Done
-✓ scripts/resize.py  0.8s
+09:15:32 → scripts/resize.py  date=2026-03-18  size=1920x1080  label=fullhd
+           · Resizing image...
+           ▸ fullhd | photo_001.jpg | 1920x1080
+           · Applying sharpening filter...
+           ▸ fullhd | photo_001.jpg | sharpened
+           ! Warning: EXIF data missing
+           · Done
+09:15:33 ✓ scripts/resize.py  0.8s
 
-→ scripts/resize.py  date=2026-03-18  size=1280x720  label=hd
-  · Resizing image...
-  ! Connection timeout
-  ↻ retry 1/3 (1s)
-  · Resizing image...
-  ▸ hd | photo_001.jpg | 1280x720
-  · Done
-✓ scripts/resize.py  1.4s
+09:15:33 → scripts/resize.py  date=2026-03-18  size=1280x720  label=hd
+           · Resizing image...
+           ! Connection timeout
+           ↻ retry 1/3 (1s)
+           · Resizing image...
+           ▸ hd | photo_001.jpg | 1280x720
+           · Done
+09:15:34 ✓ scripts/resize.py  1.4s
 
-→ scripts/upload.sh  bucket=s3://photos-processed
-  · Uploading 8 files...
-  ! S3 throttling
-  ↻ retry 1/3 (1s)
-  ! S3 throttling
-  ↻ retry 2/3 (1s)
-  ! S3 throttling
-  ↻ retry 3/3 (1s)
-  ! S3 throttling
-✗ scripts/upload.sh  exit=1  4.1s
+09:15:34 → scripts/upload.sh  bucket=s3://photos-processed
+           · Uploading 8 files...
+           ! S3 throttling
+           ↻ retry 1/3 (1s)
+           ! S3 throttling
+           ↻ retry 2/3 (1s)
+           ! S3 throttling
+           ↻ retry 3/3 (1s)
+           ! S3 throttling
+09:15:38 ✗ scripts/upload.sh  exit=1  4.1s
 ```
 
 Icons and colors:
+- `HH:MM:SS` timestamp — **gray** (dimmed), on start/finish lines only
 - `→` step start (with call parameters) — **white/bold**
 - `·` stdout text (plain print) — **gray** (dimmed)
 - `▸` stdout JSON (formatted via `log`) — **cyan**
@@ -650,7 +651,7 @@ Icons and colors:
 - `✓` step finish (success) — **green**
 - `✗` step finish (failure) — **red**
 
-Colors are automatically disabled when stdout is not a terminal (piped to file, redirected).
+Colors and timestamps are automatically disabled when stdout is not a terminal (piped to file, redirected).
 
 Example output: `bash docs/log_example.sh`
 

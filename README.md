@@ -100,24 +100,24 @@ $ piperig run news.pipe.yaml
 ```
 
 ```
-→ scripts/fetch_articles.py  source=hackernews  topic=programming  date=2026-03-18
-  · Fetching from Hacker News...
-  ! Connection timeout
-  ↻ retry 1/2 (3s)
-  · Fetching from Hacker News...
-  · Found 42 articles
-✓ scripts/fetch_articles.py  4.1s
+09:15:32 → scripts/fetch_articles.py  source=hackernews  topic=programming  date=2026-03-18
+           · Fetching from Hacker News...
+           ! Connection timeout
+           ↻ retry 1/2 (3s)
+           · Fetching from Hacker News...
+           · Found 42 articles
+09:15:36 ✓ scripts/fetch_articles.py  4.1s
 
-→ scripts/fetch_articles.py  source=hackernews  topic=programming  date=2026-03-19
-  · Fetching from Hacker News...
-  · Found 38 articles
-✓ scripts/fetch_articles.py  1.2s
+09:15:36 → scripts/fetch_articles.py  source=hackernews  topic=programming  date=2026-03-19
+           · Fetching from Hacker News...
+           · Found 38 articles
+09:15:37 ✓ scripts/fetch_articles.py  1.2s
 
 ...
 
-→ scripts/send_digest.sh  output_dir=./news
-  · Sending digest email...
-✓ scripts/send_digest.sh  0.3s
+09:16:01 → scripts/send_digest.sh  output_dir=./news
+           · Sending digest email...
+09:16:01 ✓ scripts/send_digest.sh  0.3s
 ```
 
 `piperig check` shows the plan. `piperig run` executes it. That's the whole idea.
@@ -377,10 +377,10 @@ print(json.dumps({"label": "thumb",  "file": "photo.jpg", "size": "128x128"}))
 piperig displays:
 
 ```
-→ scripts/resize.py
-  ▸ fullhd | photo.jpg | 1920x1080
-  ▸ thumb  | photo.jpg | 128x128
-✓ scripts/resize.py  0.3s
+09:15:32 → scripts/resize.py
+           ▸ fullhd | photo.jpg | 1920x1080
+           ▸ thumb  | photo.jpg | 128x128
+09:15:32 ✓ scripts/resize.py  0.3s
 ```
 
 Plain text output (`print("Processing...")`) still works — it passes through as-is. JSON and text can be mixed freely. Without `log`, JSON lines are also displayed as plain text.
@@ -466,6 +466,7 @@ Type to filter by path. Toggle between **run** and **check** with arrow keys.
 
 | Icon | Meaning | Color |
 |------|---------|-------|
+| `HH:MM:SS` | timestamp (start/finish only) | dim |
 | `→` | step start | white/bold |
 | `·` | stdout text | dim |
 | `▸` | stdout JSON (via `log`) | cyan |
@@ -474,7 +475,7 @@ Type to filter by path. Toggle between **run** and **check** with arrow keys.
 | `✓` | success | green |
 | `✗` | failure | red |
 
-Colors are disabled when stdout is not a terminal.
+Colors and timestamps are disabled when stdout is not a terminal.
 
 ---
 
