@@ -24,9 +24,10 @@ const (
 
 // Writer formats piperig output with optional ANSI colors.
 type Writer struct {
-	w     io.Writer
-	color bool
-	log   []string
+	w       io.Writer
+	color   bool
+	log     []string
+	started bool // true after the first Start call, used to add blank lines between steps
 }
 
 // New creates a Writer. Set color=true for ANSI terminal output.
@@ -46,8 +47,50 @@ func (w *Writer) Log() []string {
 
 // --- Run-time methods ---
 
+// PipeHeader prints the pipe name and description before execution starts.
+func (w *Writer) PipeHeader(name, description string) {
+	if description != "" {
+		if w.color {
+			fmt.Fprintf(w.w, "%s%s%s %s— %s%s\n", bold, name, reset, dim, description, reset)
+		} else {
+			fmt.Fprintf(w.w, "%s — %s\n", name, description)
+		}
+	} else {
+		if w.color {
+			fmt.Fprintf(w.w, "%s%s%s\n", bold, name, reset)
+		} else {
+			fmt.Fprintf(w.w, "%s\n", name)
+		}
+	}
+	fmt.Fprintln(w.w)
+}
+
+// PipeSummary prints the final summary line after execution.
+func (w *Writer) PipeSummary(calls int, dur time.Duration, failed bool) {
+	fmt.Fprintln(w.w)
+	ds := formatDuration(dur)
+	if failed {
+		if w.color {
+			fmt.Fprintf(w.w, "%s✗ %d calls  %s%s\n", red, calls, ds, reset)
+		} else {
+			fmt.Fprintf(w.w, "✗ %d calls  %s\n", calls, ds)
+		}
+	} else {
+		if w.color {
+			fmt.Fprintf(w.w, "%s✓ %d calls  %s%s\n", green, calls, ds, reset)
+		} else {
+			fmt.Fprintf(w.w, "✓ %d calls  %s\n", calls, ds)
+		}
+	}
+}
+
 // Start prints the step start line.
 func (w *Writer) Start(job string, params map[string]string) {
+	if w.started {
+		fmt.Fprintln(w.w)
+	}
+	w.started = true
+
 	paramStr := formatParams(params)
 	if paramStr != "" {
 		paramStr = "  " + paramStr

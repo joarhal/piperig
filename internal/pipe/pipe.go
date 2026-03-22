@@ -68,6 +68,7 @@ type StepPlan struct {
 
 // Plan is the result of expanding an entire pipe.
 type Plan struct {
+	Name        string // filename, e.g. "healthcheck.pipe.yaml"
 	Description string
 	Log         []string
 	Steps       []StepPlan

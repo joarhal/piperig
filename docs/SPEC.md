@@ -608,9 +608,11 @@ Entries run independently. Within `run` — sequentially. If a pipe fails — st
 
 ## Output
 
-piperig formats output with icons, timestamps, and indentation. Step start (`→`) and finish (`✓`/`✗`) lines include an `HH:MM:SS` timestamp. Intermediate lines (stdout, stderr, retry) are indented without a timestamp.
+piperig formats output with a pipe header, icons, timestamps, and indentation. The header shows the pipe filename and description. Step start (`→`) and finish (`✓`/`✗`) lines include an `HH:MM:SS` timestamp. Intermediate lines (stdout, stderr, retry) are indented without a timestamp. A summary line at the end shows total calls and duration.
 
 ```
+images.pipe.yaml — Resize images for the last 2 days
+
 09:15:32 → scripts/resize.py  date=2026-03-18  size=1920x1080  label=fullhd
            · Resizing image...
            ▸ fullhd | photo_001.jpg | 1920x1080
@@ -639,17 +641,20 @@ piperig formats output with icons, timestamps, and indentation. Step start (`→
            ↻ retry 3/3 (1s)
            ! S3 throttling
 09:15:38 ✗ scripts/upload.sh  exit=1  4.1s
+
+✗ 19 calls  6.2s
 ```
 
 Icons and colors:
+- pipe header — **bold** name, **gray** description
 - `HH:MM:SS` timestamp — **gray** (dimmed), on start/finish lines only
 - `→` step start (with call parameters) — **white/bold**
 - `·` stdout text (plain print) — **gray** (dimmed)
 - `▸` stdout JSON (formatted via `log`) — **cyan**
 - `!` stderr — **yellow**
 - `↻` retry — **yellow**
-- `✓` step finish (success) — **green**
-- `✗` step finish (failure) — **red**
+- `✓` step/pipe finish (success) — **green**
+- `✗` step/pipe finish (failure) — **red**
 
 Colors and timestamps are automatically disabled when stdout is not a terminal (piped to file, redirected).
 

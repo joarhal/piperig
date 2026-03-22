@@ -38,11 +38,21 @@ type Runner struct {
 func (r *Runner) RunPlan(ctx context.Context, plan *pipe.Plan) error {
 	r.Output.SetLog(plan.Log)
 
+	if plan.Name != "" {
+		r.Output.PipeHeader(plan.Name, plan.Description)
+	}
+
+	start := time.Now()
+	totalCalls := plan.TotalCalls()
+
 	for _, step := range plan.Steps {
 		if err := r.RunStep(ctx, step); err != nil {
+			r.Output.PipeSummary(totalCalls, time.Since(start), true)
 			return err
 		}
 	}
+
+	r.Output.PipeSummary(totalCalls, time.Since(start), false)
 	return nil
 }
 
@@ -194,6 +204,7 @@ func (r *Runner) runNestedPipe(ctx context.Context, call pipe.Call) error {
 	if err != nil {
 		return &pipe.RunError{Job: call.Job, ExitCode: 1, Err: err}
 	}
+	plan.Name = filepath.Base(call.Job)
 
 	return r.RunPlan(ctx, plan)
 }

@@ -136,6 +136,7 @@ func runSinglePipe(path string, cfg *config.Config, w *output.Writer, overrides 
 		fmt.Fprintf(os.Stderr, "expand: %v\n", err)
 		return 1
 	}
+	plan.Name = filepath.Base(path)
 
 	r := &runner.Runner{
 		Interpreters: cfg.Interpreters,

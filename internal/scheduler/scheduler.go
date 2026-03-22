@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -141,6 +142,7 @@ func runPipe(path string, overrides map[string]string, cfg *config.Config, w *ou
 	if err != nil {
 		return fmt.Errorf("expand %s: %w", path, err)
 	}
+	plan.Name = filepath.Base(path)
 
 	r := &runner.Runner{
 		Interpreters: cfg.Interpreters,

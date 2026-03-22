@@ -100,6 +100,8 @@ $ piperig run news.pipe.yaml
 ```
 
 ```
+news.pipe.yaml — Collect and summarize news for last 3 days
+
 09:15:32 → scripts/fetch_articles.py  source=hackernews  topic=programming  date=2026-03-18
            · Fetching from Hacker News...
            ! Connection timeout
@@ -118,6 +120,8 @@ $ piperig run news.pipe.yaml
 09:16:01 → scripts/send_digest.sh  output_dir=./news
            · Sending digest email...
 09:16:01 ✓ scripts/send_digest.sh  0.3s
+
+✓ 13 calls  29.3s
 ```
 
 `piperig check` shows the plan. `piperig run` executes it. That's the whole idea.
@@ -466,14 +470,16 @@ Type to filter by path. Toggle between **run** and **check** with arrow keys.
 
 | Icon | Meaning | Color |
 |------|---------|-------|
+| header | pipe name + description | bold / dim |
 | `HH:MM:SS` | timestamp (start/finish only) | dim |
 | `→` | step start | white/bold |
 | `·` | stdout text | dim |
 | `▸` | stdout JSON (via `log`) | cyan |
 | `!` | stderr | yellow |
 | `↻` | retry | yellow |
-| `✓` | success | green |
-| `✗` | failure | red |
+| `✓` | step/pipe success | green |
+| `✗` | step/pipe failure | red |
+| summary | total calls + duration | green/red |
 
 Colors and timestamps are disabled when stdout is not a terminal.
 
