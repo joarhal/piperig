@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -269,7 +270,7 @@ func (r *Runner) readStdout(rc io.Reader) {
 			if json.Unmarshal([]byte(line), &obj) == nil {
 				fields := make(map[string]string)
 				for k, v := range obj {
-					fields[k] = fmt.Sprint(v)
+					fields[k] = formatJSONValue(v)
 				}
 				r.Output.JSON(fields)
 				continue
@@ -277,6 +278,19 @@ func (r *Runner) readStdout(rc io.Reader) {
 		}
 		r.Output.Text(line)
 	}
+}
+
+// formatJSONValue converts a JSON value to string without scientific notation.
+// Go's json.Unmarshal decodes all numbers as float64, so 17144090 becomes
+// 1.714409e+07 with fmt.Sprint. This function formats whole numbers as integers.
+func formatJSONValue(v any) string {
+	if f, ok := v.(float64); ok {
+		if f == float64(int64(f)) {
+			return fmt.Sprintf("%d", int64(f))
+		}
+		return strconv.FormatFloat(f, 'f', -1, 64)
+	}
+	return fmt.Sprint(v)
 }
 
 func (r *Runner) readStderr(rc io.Reader) {
