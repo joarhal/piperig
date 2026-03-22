@@ -13,6 +13,7 @@ const configFile = ".piperig.yaml"
 // Config holds project-level configuration.
 type Config struct {
 	Interpreters map[string]string `yaml:"interpreters"`
+	Env          map[string]string `yaml:"env"`
 }
 
 // Default returns a Config with built-in interpreter mappings.
@@ -25,6 +26,7 @@ func Default() *Config {
 			".ts": "npx tsx",
 			".rb": "ruby",
 		},
+		Env: make(map[string]string),
 	}
 }
 
@@ -48,6 +50,9 @@ func Load() (*Config, error) {
 	cfg := Default()
 	for ext, cmd := range file.Interpreters {
 		cfg.Interpreters[ext] = cmd
+	}
+	for k, v := range file.Env {
+		cfg.Env[k] = v
 	}
 	return cfg, nil
 }

@@ -129,10 +129,10 @@ func (r *Runner) RunCall(ctx context.Context, call pipe.Call, timeout time.Durat
 			return err
 		}
 		cmd.Stdin = strings.NewReader(string(jsonData))
-		cmd.Env = os.Environ()
+		cmd.Env = r.baseEnv()
 	case pipe.InputArgs:
 		cmd.Args = append(cmd.Args, r.buildArgs(call.Params)...)
-		cmd.Env = os.Environ()
+		cmd.Env = r.baseEnv()
 	}
 
 	// Capture stdout and stderr
@@ -217,8 +217,17 @@ func (r *Runner) resolveCommand(job string) (string, []string, error) {
 	return parts[0], args, nil
 }
 
-func (r *Runner) buildEnv(params map[string]string) []string {
+// baseEnv returns os.Environ() with config-level env vars applied (config wins).
+func (r *Runner) baseEnv() []string {
 	env := os.Environ()
+	for k, v := range r.Config.Env {
+		env = append(env, k+"="+v)
+	}
+	return env
+}
+
+func (r *Runner) buildEnv(params map[string]string) []string {
+	env := r.baseEnv()
 	for k, v := range params {
 		env = append(env, strings.ToUpper(k)+"="+v)
 	}

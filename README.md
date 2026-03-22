@@ -497,16 +497,22 @@ piperig version                                print version
 
 ## Project config
 
-Optional `.piperig.yaml` — custom interpreters for non-standard extensions:
+Optional `.piperig.yaml` at the project root:
 
 ```yaml
 interpreters:
   .py: python3.11
   .php: php
   .lua: lua
+
+env:
+  PYTHONPATH: .
+  NODE_ENV: production
 ```
 
-Defaults: `.py` → python, `.sh` → bash, `.js` → node, `.ts` → npx tsx, `.rb` → ruby.
+**interpreters** — custom script runners for non-standard extensions. Defaults: `.py` → python, `.sh` → bash, `.js` → node, `.ts` → npx tsx, `.rb` → ruby.
+
+**env** — environment variables added to every subprocess. Useful for `PYTHONPATH`, `NODE_ENV`, API keys, and other runtime config. Config values override system environment.
 
 ## Exit codes
 

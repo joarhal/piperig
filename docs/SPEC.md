@@ -676,7 +676,9 @@ Without `log` — JSON lines are displayed as plain text (`·`).
 
 ## .piperig.yaml — project config
 
-Optional file at the project root. Its only purpose — override interpreters:
+Optional file at the project root. Two sections: `interpreters` and `env`.
+
+### interpreters — custom script runners
 
 ```yaml
 interpreters:
@@ -687,6 +689,19 @@ interpreters:
 ```
 
 Without the file — defaults (`python`, `bash`, `node`, `npx tsx`, `ruby`). Non-standard extensions (`.php`, `.lua`, `.r`) are added here.
+
+### env — process environment variables
+
+```yaml
+env:
+  PYTHONPATH: .
+  NODE_ENV: production
+  API_BASE: https://api.example.com
+```
+
+Variables from `env` are added to the subprocess environment for every job. If a variable already exists in the system environment, the config value wins (override).
+
+`env` is for the process environment — it does not mix with `with` parameters. `with` controls what the job receives as input (env vars with uppercase keys, JSON, or args). `env` controls the runtime environment of the process itself.
 
 ### piperig init
 

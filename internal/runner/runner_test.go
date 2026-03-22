@@ -259,6 +259,89 @@ func TestRunNestedDepthLimit(t *testing.T) {
 	}
 }
 
+func TestConfigEnvInjected(t *testing.T) {
+	var buf bytes.Buffer
+	w := output.New(&buf, false)
+	cfg := config.Default()
+	cfg.Env["PYTHONPATH"] = "/custom/path"
+	cfg.Env["CUSTOM_VAR"] = "hello"
+
+	r := &Runner{
+		Interpreters: cfg.Interpreters,
+		Output:       w,
+		Now:          time.Now(),
+		Config:       cfg,
+	}
+
+	err := r.RunCall(context.Background(), pipe.Call{
+		Job: scriptPath("print_env.sh"), Input: pipe.InputEnv,
+	}, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "PYTHONPATH=/custom/path") {
+		t.Errorf("expected PYTHONPATH=/custom/path in output, got:\n%s", out)
+	}
+	if !strings.Contains(out, "CUSTOM_VAR=hello") {
+		t.Errorf("expected CUSTOM_VAR=hello in output, got:\n%s", out)
+	}
+}
+
+func TestConfigEnvWithJSONMode(t *testing.T) {
+	var buf bytes.Buffer
+	w := output.New(&buf, false)
+	cfg := config.Default()
+	cfg.Env["CUSTOM_VAR"] = "from_config"
+
+	r := &Runner{
+		Interpreters: cfg.Interpreters,
+		Output:       w,
+		Now:          time.Now(),
+		Config:       cfg,
+	}
+
+	err := r.RunCall(context.Background(), pipe.Call{
+		Job:    scriptPath("print_env.sh"),
+		Params: map[string]string{"src": "/data"},
+		Input:  pipe.InputJSON,
+	}, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "CUSTOM_VAR=from_config") {
+		t.Errorf("expected CUSTOM_VAR=from_config in JSON mode, got:\n%s", out)
+	}
+}
+
+func TestConfigEnvWithArgsMode(t *testing.T) {
+	var buf bytes.Buffer
+	w := output.New(&buf, false)
+	cfg := config.Default()
+	cfg.Env["CUSTOM_VAR"] = "from_config"
+
+	r := &Runner{
+		Interpreters: cfg.Interpreters,
+		Output:       w,
+		Now:          time.Now(),
+		Config:       cfg,
+	}
+
+	err := r.RunCall(context.Background(), pipe.Call{
+		Job:    scriptPath("print_env.sh"),
+		Params: map[string]string{"key": "value"},
+		Input:  pipe.InputArgs,
+	}, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "CUSTOM_VAR=from_config") {
+		t.Errorf("expected CUSTOM_VAR=from_config in args mode, got:\n%s", out)
+	}
+}
+
 func TestDirectExecNoExtension(t *testing.T) {
 	// Create an executable without extension
 	dir := t.TempDir()

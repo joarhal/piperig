@@ -1,0 +1,3 @@
+#!/bin/bash
+echo "PYTHONPATH=$PYTHONPATH"
+echo "CUSTOM_VAR=$CUSTOM_VAR"

@@ -236,6 +236,10 @@ func cmdInit() int {
 	for ext, cmd := range cfg.Interpreters {
 		lines = append(lines, fmt.Sprintf("  %s: %s", ext, cmd))
 	}
+	lines = append(lines, "")
+	lines = append(lines, "# env:")
+	lines = append(lines, "#   PYTHONPATH: .")
+	lines = append(lines, "#   NODE_ENV: production")
 
 	if err := os.WriteFile(filename, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
 		fmt.Fprintf(os.Stderr, "write: %v\n", err)

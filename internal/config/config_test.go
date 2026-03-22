@@ -83,6 +83,41 @@ func TestLoadNewExtension(t *testing.T) {
 	}
 }
 
+func TestLoadEnv(t *testing.T) {
+	dir := t.TempDir()
+	content := "env:\n  PYTHONPATH: .\n  API_BASE: https://api.example.com\n"
+	os.WriteFile(filepath.Join(dir, ".piperig.yaml"), []byte(content), 0o644)
+
+	oldWd, _ := os.Getwd()
+	os.Chdir(dir)
+	defer os.Chdir(oldWd)
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Env["PYTHONPATH"] != "." {
+		t.Errorf("PYTHONPATH = %q, want \".\"", cfg.Env["PYTHONPATH"])
+	}
+	if cfg.Env["API_BASE"] != "https://api.example.com" {
+		t.Errorf("API_BASE = %q, want https://api.example.com", cfg.Env["API_BASE"])
+	}
+	// Interpreters should still have defaults
+	if cfg.Interpreters[".py"] != "python" {
+		t.Errorf(".py = %q, want python", cfg.Interpreters[".py"])
+	}
+}
+
+func TestDefaultEnvEmpty(t *testing.T) {
+	cfg := Default()
+	if cfg.Env == nil {
+		t.Error("Env should be initialized, got nil")
+	}
+	if len(cfg.Env) != 0 {
+		t.Errorf("Env should be empty, got %v", cfg.Env)
+	}
+}
+
 func TestLoadMalformed(t *testing.T) {
 	dir := t.TempDir()
 	os.WriteFile(filepath.Join(dir, ".piperig.yaml"), []byte("{{bad"), 0o644)
