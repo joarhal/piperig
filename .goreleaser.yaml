@@ -15,6 +15,18 @@ builds:
 archives:
   - format: tar.gz
 
+brews:
+  - repository:
+      owner: joarhal
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/joarhal/piperig"
+    description: "Declarative pipeline runner for shell scripts"
+    license: "MIT"
+    test: |
+      system "#{bin}/piperig", "version"
+
 changelog:
   use: github
   filters:
