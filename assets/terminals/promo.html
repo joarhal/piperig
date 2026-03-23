@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@500;700&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -21,7 +21,22 @@
     border-radius: 16px;
     border: 1px solid #1e1e22;
     display: inline-block;
-    padding: 32px 40px;
+    padding: 40px 48px;
+  }
+
+  .title {
+    font-family: 'Inter', sans-serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: #5a5a63;
+    margin-bottom: 32px;
   }
 
   .columns {
@@ -58,6 +73,7 @@
 
   .y-key { color: #7dd3fc; }
   .y-val { color: #fcd34d; }
+  .y-comment { color: #3a3a42; font-style: italic; }
 
   .arrow-col {
     display: flex;
@@ -71,10 +87,14 @@
   .t-bold { color: #fff; font-weight: 700; }
   .t-ok { color: #34d399; }
   .t-warn { color: #facc15; }
+  .t-cyan { color: #22d3ee; }
 </style>
 </head>
 <body>
   <div class="card">
+    <div class="title">piperig</div>
+    <div class="subtitle">YAML pipelines for your scripts — with loops, retries, and scheduling</div>
+
     <div class="columns">
       <div class="col">
         <div class="col-label">Define</div>
