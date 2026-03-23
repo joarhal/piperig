@@ -1,4 +1,4 @@
-.PHONY: build test vet generate clean
+.PHONY: build test vet generate screenshots clean
 
 build:
 	go generate ./...
@@ -12,6 +12,9 @@ vet:
 
 generate:
 	go generate ./...
+
+screenshots:
+	./assets/generate.sh
 
 clean:
 	rm -f piperig

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="terminal.css">
+</head>
+<body>
+  <div class="terminal">
+    <div class="titlebar">
+      <div class="dot red"></div>
+      <div class="dot yellow"></div>
+      <div class="dot green"></div>
+    </div>
+    <div class="content">
+      <div class="line"><span class="prompt">$ </span><span class="cmd">piperig run news.pipe.yaml</span></div>
+      <div class="blank"></div>
+      <div class="line"><span class="header-name">news.pipe.yaml</span> <span class="header-desc">— Collect and summarize news</span></div>
+      <div class="blank"></div>
+      <div class="line"><span class="timestamp">09:15:32</span> <span class="arrow">→</span> <span class="job">scripts/fetch_articles.py</span>  <span class="dim">source=hackernews  date=2026-03-22</span></div>
+      <div class="line"><span class="dim">           · Fetching from Hacker News...</span></div>
+      <div class="line"><span class="warn">           ! Connection timeout</span></div>
+      <div class="line"><span class="retry">           ↻ retry 1/2 (3s)</span></div>
+      <div class="line"><span class="dim">           · Fetching from Hacker News...</span></div>
+      <div class="line"><span class="dim">           · Found 42 articles</span></div>
+      <div class="line"><span class="timestamp">09:15:36</span> <span class="ok">✓</span> <span class="job">scripts/fetch_articles.py</span>  <span class="dim">4.1s</span></div>
+      <div class="blank"></div>
+      <div class="line"><span class="timestamp">09:15:36</span> <span class="arrow">→</span> <span class="job">scripts/summarize.py</span>  <span class="dim">source=hackernews  date=2026-03-22</span></div>
+      <div class="line"><span class="dim">           · Processing 42 articles...</span></div>
+      <div class="line"><span class="dim">           · Generated summary (1.2 KB)</span></div>
+      <div class="line"><span class="timestamp">09:15:38</span> <span class="ok">✓</span> <span class="job">scripts/summarize.py</span>  <span class="dim">2.1s</span></div>
+      <div class="blank"></div>
+      <div class="line"><span class="summary-ok">✓ 13 calls  29.3s</span></div>
+    </div>
+  </div>
+</body>
+</html>

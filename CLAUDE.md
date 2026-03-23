@@ -48,6 +48,24 @@ internal/
 5. **Co-author.** Every commit includes `Co-Authored-By` for all contributors.
 6. **English only.** Commit messages in English.
 
+## Screenshots
+
+Terminal screenshots for README and docs are generated from HTML templates.
+
+```
+assets/
+  terminals/
+    terminal.css        shared styles (colors, fonts, layout)
+    banner.html         each screenshot is a separate HTML file
+  generate.sh           converts all HTML → PNG (uses Puppeteer)
+```
+
+- Each HTML file links `terminal.css` and contains only the terminal content.
+- CSS classes match piperig output: `.cmd`, `.job`, `.timestamp`, `.dim`, `.ok`, `.fail`, `.warn`, `.retry`, `.summary-ok`.
+- PNGs are generated with transparent background and saved to `assets/`.
+- Run `make screenshots` to regenerate all PNGs.
+- To add a new screenshot: create `assets/terminals/<name>.html`, run `make screenshots`.
+
 # ExecPlans
 
 When writing complex features or significant refactors, use an ExecPlan (as described in docs/plans/PLANS.md) from design to implementation.
