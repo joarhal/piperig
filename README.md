@@ -1,5 +1,10 @@
 # piperig
 
+[![CI](https://github.com/joarhal/piperig/actions/workflows/ci.yml/badge.svg)](https://github.com/joarhal/piperig/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/joarhal/piperig)](https://github.com/joarhal/piperig/releases)
+[![Go](https://img.shields.io/github/go-mod/go-version/joarhal/piperig)](https://go.dev/)
+[![License](https://img.shields.io/github/license/joarhal/piperig)](LICENSE)
+
 Run your scripts as declarative YAML pipelines — with loops, date ranges, retries, and scheduling.
 
 ```
