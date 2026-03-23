@@ -14,6 +14,11 @@ func newTestWriter() (*Writer, *bytes.Buffer) {
 	return New(&buf, false), &buf
 }
 
+func newColorWriter() (*Writer, *bytes.Buffer) {
+	var buf bytes.Buffer
+	return New(&buf, true), &buf
+}
+
 func TestStart(t *testing.T) {
 	w, buf := newTestWriter()
 	w.Start("scripts/resize.py", map[string]string{"date": "2026-03-18", "size": "1920x1080"})
@@ -33,6 +38,17 @@ func TestStartNoParams(t *testing.T) {
 	out := buf.String()
 	if !strings.Contains(out, "→ scripts/run.sh") {
 		t.Errorf("got %q, want timestamp + → scripts/run.sh", out)
+	}
+}
+
+func TestStartBlankLineBetweenSteps(t *testing.T) {
+	w, buf := newTestWriter()
+	w.Start("job1", nil)
+	first := buf.Len()
+	w.Start("job2", nil)
+	out := buf.String()[first:]
+	if !strings.HasPrefix(out, "\n") {
+		t.Error("expected blank line between steps")
 	}
 }
 
@@ -128,9 +144,9 @@ func TestCheckPipeNoDesc(t *testing.T) {
 func TestCheckStep(t *testing.T) {
 	w, buf := newTestWriter()
 	step := pipe.StepPlan{
-		Job:  "scripts/resize.py",
+		Job:   "scripts/resize.py",
 		Calls: make([]pipe.Call, 8),
-		Dims: "4 each × 2 dates",
+		Dims:  "4 each × 2 dates",
 	}
 	w.CheckStep(2, step)
 	want := "  Step 2: scripts/resize.py × 4 each × 2 dates = 8 calls\n"
@@ -161,6 +177,15 @@ func TestCheckCall(t *testing.T) {
 	}
 }
 
+func TestCheckCallEmptyParams(t *testing.T) {
+	w, buf := newTestWriter()
+	w.CheckCall(1, nil)
+	want := "    1. \n"
+	if buf.String() != want {
+		t.Errorf("got %q, want %q", buf.String(), want)
+	}
+}
+
 func TestCheckTotal(t *testing.T) {
 	w, buf := newTestWriter()
 	w.CheckTotal(19)
@@ -169,6 +194,17 @@ func TestCheckTotal(t *testing.T) {
 		t.Errorf("got %q, want %q", buf.String(), want)
 	}
 }
+
+func TestCheckTotalZero(t *testing.T) {
+	w, buf := newTestWriter()
+	w.CheckTotal(0)
+	want := "  Total: 0 calls\n"
+	if buf.String() != want {
+		t.Errorf("got %q, want %q", buf.String(), want)
+	}
+}
+
+// --- Color tests ---
 
 func TestColorOutput(t *testing.T) {
 	var buf bytes.Buffer
@@ -180,5 +216,403 @@ func TestColorOutput(t *testing.T) {
 	}
 	if !bytes.Contains(buf.Bytes(), []byte("hello")) {
 		t.Error("output should contain the text")
+	}
+}
+
+func TestPipeHeaderColor(t *testing.T) {
+	w, buf := newColorWriter()
+	w.PipeHeader("mypipe", "a description")
+	out := buf.String()
+	if !strings.Contains(out, bold) {
+		t.Error("expected bold ANSI code for pipe name")
+	}
+	if !strings.Contains(out, dim) {
+		t.Error("expected dim ANSI code for description")
+	}
+	if !strings.Contains(out, "mypipe") {
+		t.Error("expected pipe name in output")
+	}
+	if !strings.Contains(out, "a description") {
+		t.Error("expected description in output")
+	}
+	if !strings.Contains(out, reset) {
+		t.Error("expected reset ANSI code")
+	}
+}
+
+func TestPipeHeaderColorNoDesc(t *testing.T) {
+	w, buf := newColorWriter()
+	w.PipeHeader("mypipe", "")
+	out := buf.String()
+	if !strings.Contains(out, bold) {
+		t.Error("expected bold ANSI code for pipe name")
+	}
+	if !strings.Contains(out, "mypipe") {
+		t.Error("expected pipe name in output")
+	}
+	// Should not contain dim (no description)
+	if strings.Contains(out, dim+"— ") {
+		t.Error("should not contain description formatting without description")
+	}
+}
+
+func TestPipeHeaderNoColor(t *testing.T) {
+	w, buf := newTestWriter()
+	w.PipeHeader("mypipe", "a description")
+	want := "mypipe — a description\n\n"
+	if buf.String() != want {
+		t.Errorf("got %q, want %q", buf.String(), want)
+	}
+}
+
+func TestPipeHeaderNoColorNoDesc(t *testing.T) {
+	w, buf := newTestWriter()
+	w.PipeHeader("mypipe", "")
+	want := "mypipe\n\n"
+	if buf.String() != want {
+		t.Errorf("got %q, want %q", buf.String(), want)
+	}
+}
+
+func TestPipeSummaryNoColor(t *testing.T) {
+	w, buf := newTestWriter()
+	w.PipeSummary(5, 3*time.Second, false)
+	out := buf.String()
+	if !strings.Contains(out, "✓ 5 calls  3.0s") {
+		t.Errorf("got %q, want success summary", out)
+	}
+}
+
+func TestPipeSummaryNoColorFailed(t *testing.T) {
+	w, buf := newTestWriter()
+	w.PipeSummary(5, 3*time.Second, true)
+	out := buf.String()
+	if !strings.Contains(out, "✗ 5 calls  3.0s") {
+		t.Errorf("got %q, want failed summary", out)
+	}
+}
+
+func TestPipeSummaryColor(t *testing.T) {
+	w, buf := newColorWriter()
+	w.PipeSummary(5, 3*time.Second, false)
+	out := buf.String()
+	if !strings.Contains(out, green) {
+		t.Error("expected green ANSI code for success")
+	}
+	if !strings.Contains(out, "✓") {
+		t.Error("expected checkmark in output")
+	}
+	if !strings.Contains(out, "5 calls") {
+		t.Error("expected call count")
+	}
+	if !strings.Contains(out, reset) {
+		t.Error("expected reset ANSI code")
+	}
+}
+
+func TestPipeSummaryColorFailed(t *testing.T) {
+	w, buf := newColorWriter()
+	w.PipeSummary(5, 3*time.Second, true)
+	out := buf.String()
+	if !strings.Contains(out, red) {
+		t.Error("expected red ANSI code for failure")
+	}
+	if !strings.Contains(out, "✗") {
+		t.Error("expected X mark in output")
+	}
+}
+
+func TestStartColor(t *testing.T) {
+	w, buf := newColorWriter()
+	w.Start("scripts/run.sh", map[string]string{"x": "1"})
+	out := buf.String()
+	if !strings.Contains(out, bold) {
+		t.Error("expected bold ANSI code")
+	}
+	if !strings.Contains(out, dim) {
+		t.Error("expected dim ANSI code for timestamp/params")
+	}
+	if !strings.Contains(out, "→") {
+		t.Error("expected arrow in output")
+	}
+	if !strings.Contains(out, "scripts/run.sh") {
+		t.Error("expected job name")
+	}
+	if !strings.Contains(out, "x=1") {
+		t.Error("expected params")
+	}
+}
+
+func TestStartColorNoParams(t *testing.T) {
+	w, buf := newColorWriter()
+	w.Start("scripts/run.sh", nil)
+	out := buf.String()
+	if !strings.Contains(out, bold) {
+		t.Error("expected bold ANSI code")
+	}
+	if !strings.Contains(out, "→") {
+		t.Error("expected arrow in output")
+	}
+}
+
+func TestOkColor(t *testing.T) {
+	w, buf := newColorWriter()
+	w.Ok("scripts/resize.py", 800*time.Millisecond)
+	out := buf.String()
+	if !strings.Contains(out, green) {
+		t.Error("expected green ANSI code for success checkmark")
+	}
+	if !strings.Contains(out, bold) {
+		t.Error("expected bold ANSI code for job name")
+	}
+	if !strings.Contains(out, dim) {
+		t.Error("expected dim ANSI code for duration")
+	}
+	if !strings.Contains(out, "✓") {
+		t.Error("expected checkmark")
+	}
+	if !strings.Contains(out, "scripts/resize.py") {
+		t.Error("expected job name")
+	}
+	if !strings.Contains(out, "0.8s") {
+		t.Error("expected duration")
+	}
+}
+
+func TestFailColor(t *testing.T) {
+	w, buf := newColorWriter()
+	w.Fail("scripts/upload.sh", 2, 4100*time.Millisecond)
+	out := buf.String()
+	if !strings.Contains(out, red) {
+		t.Error("expected red ANSI code for failure")
+	}
+	if !strings.Contains(out, bold) {
+		t.Error("expected bold ANSI code for job name")
+	}
+	if !strings.Contains(out, "✗") {
+		t.Error("expected X mark")
+	}
+	if !strings.Contains(out, "exit=2") {
+		t.Error("expected exit code")
+	}
+	if !strings.Contains(out, "scripts/upload.sh") {
+		t.Error("expected job name")
+	}
+}
+
+func TestTextColor(t *testing.T) {
+	w, buf := newColorWriter()
+	w.Text("hello world")
+	out := buf.String()
+	if !strings.Contains(out, dim) {
+		t.Error("expected dim ANSI code")
+	}
+	if !strings.Contains(out, "·") {
+		t.Error("expected dot marker")
+	}
+	if !strings.Contains(out, "hello world") {
+		t.Error("expected text content")
+	}
+	if !strings.Contains(out, reset) {
+		t.Error("expected reset ANSI code")
+	}
+}
+
+func TestJSONColor(t *testing.T) {
+	w, buf := newColorWriter()
+	w.SetLog([]string{"a", "b"})
+	w.JSON(map[string]string{"a": "1", "b": "2"})
+	out := buf.String()
+	if !strings.Contains(out, cyan) {
+		t.Error("expected cyan ANSI code for JSON output")
+	}
+	if !strings.Contains(out, "▸") {
+		t.Error("expected arrow marker")
+	}
+	if !strings.Contains(out, "1 | 2") {
+		t.Error("expected joined values")
+	}
+	if !strings.Contains(out, reset) {
+		t.Error("expected reset ANSI code")
+	}
+}
+
+func TestStderrColor(t *testing.T) {
+	w, buf := newColorWriter()
+	w.Stderr("oops")
+	out := buf.String()
+	if !strings.Contains(out, yellow) {
+		t.Error("expected yellow ANSI code for stderr")
+	}
+	if !strings.Contains(out, "!") {
+		t.Error("expected bang marker")
+	}
+	if !strings.Contains(out, "oops") {
+		t.Error("expected stderr text")
+	}
+	if !strings.Contains(out, reset) {
+		t.Error("expected reset ANSI code")
+	}
+}
+
+func TestRetryColor(t *testing.T) {
+	w, buf := newColorWriter()
+	w.Retry(2, 5, 3*time.Second)
+	out := buf.String()
+	if !strings.Contains(out, yellow) {
+		t.Error("expected yellow ANSI code for retry")
+	}
+	if !strings.Contains(out, "↻") {
+		t.Error("expected retry marker")
+	}
+	if !strings.Contains(out, "retry 2/5") {
+		t.Error("expected retry count")
+	}
+	if !strings.Contains(out, "(3s)") {
+		t.Error("expected delay")
+	}
+	if !strings.Contains(out, reset) {
+		t.Error("expected reset ANSI code")
+	}
+}
+
+// --- formatDuration edge cases ---
+
+func TestFormatDurationSubSecond(t *testing.T) {
+	got := formatDuration(500 * time.Millisecond)
+	if got != "0.5s" {
+		t.Errorf("got %q, want %q", got, "0.5s")
+	}
+}
+
+func TestFormatDurationZero(t *testing.T) {
+	got := formatDuration(0)
+	if got != "0.0s" {
+		t.Errorf("got %q, want %q", got, "0.0s")
+	}
+}
+
+func TestFormatDurationSeconds(t *testing.T) {
+	got := formatDuration(3500 * time.Millisecond)
+	if got != "3.5s" {
+		t.Errorf("got %q, want %q", got, "3.5s")
+	}
+}
+
+func TestFormatDurationOneMinute(t *testing.T) {
+	got := formatDuration(60 * time.Second)
+	if got != "1m0s" {
+		t.Errorf("got %q, want %q", got, "1m0s")
+	}
+}
+
+func TestFormatDurationMinutesAndSeconds(t *testing.T) {
+	got := formatDuration(90 * time.Second)
+	if got != "1m30s" {
+		t.Errorf("got %q, want %q", got, "1m30s")
+	}
+}
+
+func TestFormatDurationMultipleMinutes(t *testing.T) {
+	got := formatDuration(5*time.Minute + 30*time.Second)
+	if got != "5m30s" {
+		t.Errorf("got %q, want %q", got, "5m30s")
+	}
+}
+
+func TestFormatDurationMinuteRounding(t *testing.T) {
+	// 2m30.7s should round to 2m31s
+	got := formatDuration(2*time.Minute + 30*time.Second + 700*time.Millisecond)
+	if got != "2m31s" {
+		t.Errorf("got %q, want %q", got, "2m31s")
+	}
+}
+
+// --- SetLog / Log ---
+
+func TestSetLogAndLog(t *testing.T) {
+	w, _ := newTestWriter()
+	fields := []string{"a", "b", "c"}
+	w.SetLog(fields)
+	got := w.Log()
+	if len(got) != 3 || got[0] != "a" || got[1] != "b" || got[2] != "c" {
+		t.Errorf("Log() = %v, want %v", got, fields)
+	}
+}
+
+func TestLogDefaultNil(t *testing.T) {
+	w, _ := newTestWriter()
+	if w.Log() != nil {
+		t.Errorf("expected nil log by default, got %v", w.Log())
+	}
+}
+
+// --- formatParams ---
+
+func TestFormatParamsSorted(t *testing.T) {
+	got := formatParams(map[string]string{"z": "3", "a": "1", "m": "2"})
+	want := "a=1  m=2  z=3"
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestFormatParamsEmpty(t *testing.T) {
+	got := formatParams(map[string]string{})
+	if got != "" {
+		t.Errorf("got %q, want empty string", got)
+	}
+}
+
+func TestFormatParamsNil(t *testing.T) {
+	got := formatParams(nil)
+	if got != "" {
+		t.Errorf("got %q, want empty string", got)
+	}
+}
+
+func TestFormatParamsSingleKey(t *testing.T) {
+	got := formatParams(map[string]string{"key": "val"})
+	want := "key=val"
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+// --- PipeSummary leading blank line ---
+
+func TestPipeSummaryLeadingBlankLine(t *testing.T) {
+	w, buf := newTestWriter()
+	w.PipeSummary(3, time.Second, false)
+	out := buf.String()
+	if !strings.HasPrefix(out, "\n") {
+		t.Error("expected PipeSummary to start with a blank line")
+	}
+}
+
+// --- CheckStep with many calls ---
+
+func TestCheckStepManyCalls(t *testing.T) {
+	w, buf := newTestWriter()
+	step := pipe.StepPlan{
+		Job:   "scripts/deploy.sh",
+		Calls: make([]pipe.Call, 100),
+		Dims:  "10 × 10",
+	}
+	w.CheckStep(1, step)
+	want := "  Step 1: scripts/deploy.sh × 10 × 10 = 100 calls\n"
+	if buf.String() != want {
+		t.Errorf("got %q, want %q", buf.String(), want)
+	}
+}
+
+// --- CheckCall with multiple sorted params ---
+
+func TestCheckCallSortedParams(t *testing.T) {
+	w, buf := newTestWriter()
+	w.CheckCall(3, map[string]string{"z": "last", "a": "first", "m": "mid"})
+	want := "    3. a=first  m=mid  z=last\n"
+	if buf.String() != want {
+		t.Errorf("got %q, want %q", buf.String(), want)
 	}
 }
