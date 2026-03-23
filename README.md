@@ -25,6 +25,14 @@ Any language. piperig picks the interpreter by extension (`.py` → python, `.sh
 
 ## Install
 
+**Homebrew:**
+
+```bash
+brew install joarhal/tap/piperig
+```
+
+**Go:**
+
 ```bash
 go install github.com/joarhal/piperig/cmd/piperig@latest
 ```
