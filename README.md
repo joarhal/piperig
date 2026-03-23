@@ -7,9 +7,9 @@
 
 Run your scripts as declarative YAML pipelines — with loops, date ranges, retries, and scheduling.
 
-```
-.pipe.yaml  →  piperig  →  your scripts
-```
+<p align="center">
+  <img src="banner.png" alt="piperig terminal output" width="700">
+</p>
 
 Single binary, no runtime dependencies. Your scripts do the work — piperig connects them.
 
