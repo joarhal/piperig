@@ -58,6 +58,12 @@ func (p *Pipe) UnmarshalYAML(node *yaml.Node) error {
 		switch key.Value {
 		case "description":
 			p.Description = val.Value
+		case "hidden":
+			var b bool
+			if err := val.Decode(&b); err != nil {
+				return fmt.Errorf("hidden: %w", err)
+			}
+			p.Hidden = b
 		case "with":
 			if err := val.Decode(&p.With); err != nil {
 				return fmt.Errorf("with: %w", err)

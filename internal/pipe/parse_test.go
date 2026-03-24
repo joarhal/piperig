@@ -263,6 +263,29 @@ func TestLoadStepLog(t *testing.T) {
 	}
 }
 
+func TestLoadHidden(t *testing.T) {
+	p, err := Load(testdataPath("hidden.pipe.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !p.Hidden {
+		t.Error("Hidden: got false, want true")
+	}
+	if p.Description != "Helper pipe" {
+		t.Errorf("Description: got %q, want %q", p.Description, "Helper pipe")
+	}
+}
+
+func TestLoadHiddenDefault(t *testing.T) {
+	p, err := Load(testdataPath("minimal.pipe.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Hidden {
+		t.Error("Hidden: got true, want false (default)")
+	}
+}
+
 func TestLoadInvalidYAML(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bad.pipe.yaml")

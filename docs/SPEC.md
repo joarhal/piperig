@@ -123,6 +123,23 @@ One step, one job, concrete parameters. piperig will call the file once.
 
 `description` — optional field. Shown in interactive mode and in `piperig check`.
 
+### hidden — exclude from picker
+
+```yaml
+description: Helper pipe for image processing
+hidden: true
+
+steps:
+  - job: scripts/helper.py
+```
+
+`hidden: true` — the pipe won't appear in `piperig run` interactive picker. It can still be:
+- Run directly: `piperig run pipes/helper.pipe.yaml`
+- Used as a nested pipe: `job: pipes/helper.pipe.yaml`
+- Included in a schedule
+
+By default `hidden: false`. Use it for utility pipes that are called from other pipes but shouldn't clutter the picker.
+
 ### with — shared parameters
 
 ```yaml

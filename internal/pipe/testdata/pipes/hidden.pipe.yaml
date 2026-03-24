@@ -1,0 +1,5 @@
+description: Helper pipe
+hidden: true
+
+steps:
+  - job: scripts/helper.py

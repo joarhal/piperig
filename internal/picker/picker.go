@@ -81,8 +81,14 @@ func collectItems() ([]item, error) {
 		}
 
 		desc := ""
-		if loaded, err := pipe.Load(p); err == nil && loaded.Description != "" {
+		hidden := false
+		if loaded, err := pipe.Load(p); err == nil {
 			desc = loaded.Description
+			hidden = loaded.Hidden
+		}
+
+		if hidden {
+			continue
 		}
 
 		files = append(files, item{path: rel, desc: desc})

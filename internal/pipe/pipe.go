@@ -19,6 +19,7 @@ type StringMap map[string]string
 // Custom UnmarshalYAML rejects unknown keys.
 type Pipe struct {
 	Description string         `yaml:"-"`
+	Hidden      bool           `yaml:"-"`
 	With        StringMap      `yaml:"-"`
 	Loop        map[string]any `yaml:"-"`
 	Each        []StringMap    `yaml:"-"`
