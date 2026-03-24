@@ -366,6 +366,19 @@ steps:
 
 Parent `with` overrides child `with`. The child's own `loop`/`each` work as written.
 
+`loop` and `each` work on nested pipe steps — the child pipe is invoked once per combination:
+
+```yaml
+steps:
+  - job: pipes/kpi/dau.pipe.yaml
+    each:
+      - { project: ds }
+      - { project: hn2 }
+      - { project: br }
+```
+
+3 projects = 3 invocations of the child pipe, each with a different `project` override.
+
 ---
 
 ## Structured output
