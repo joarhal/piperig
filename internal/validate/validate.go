@@ -49,7 +49,7 @@ func checkJobFiles(p *pipe.Pipe, cfg *config.Config, fileExists func(string) boo
 	return errs
 }
 
-// Rule 4+5: nested .pipe.yaml files exist; no loop/each on nested steps.
+// Rule 4: nested .pipe.yaml files exist.
 func checkNestedPipes(p *pipe.Pipe, fileExists func(string) bool) []error {
 	var errs []error
 	for i, step := range p.Steps {
@@ -58,12 +58,6 @@ func checkNestedPipes(p *pipe.Pipe, fileExists func(string) bool) []error {
 		}
 		if !fileExists(step.Job) {
 			errs = append(errs, fmt.Errorf("step %d: nested pipe not found: %s", i+1, step.Job))
-		}
-		if step.Loop != nil && !step.LoopOff {
-			errs = append(errs, fmt.Errorf("step %d: loop not allowed on nested pipe", i+1))
-		}
-		if step.Each != nil && !step.EachOff {
-			errs = append(errs, fmt.Errorf("step %d: each not allowed on nested pipe", i+1))
 		}
 	}
 	return errs

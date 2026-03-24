@@ -64,23 +64,6 @@ func expandStep(
 		return nil, fmt.Errorf("with: %w", err)
 	}
 
-	// Nested pipe: 1 call, no expansion
-	if strings.HasSuffix(step.Job, ".pipe.yaml") {
-		params := mergeParams(pipeWith, stepWith, overrides)
-		call := pipe.Call{
-			Job:    step.Job,
-			Params: params,
-			Input:  resolveInput(step, p),
-		}
-		sp := &pipe.StepPlan{
-			Job:   step.Job,
-			Calls: []pipe.Call{call},
-			Log:   resolveLog(step, p),
-		}
-		applyPolicies(sp, step, p)
-		return sp, nil
-	}
-
 	// Determine effective each
 	var effEach []map[string]string
 	if step.EachOff {

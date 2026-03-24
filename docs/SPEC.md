@@ -84,7 +84,19 @@ steps:
 
 Parent `with` overrides child `with` (caller wins). Child's own `loop`/`each` work as written.
 
-`loop`/`each` on a step with `.pipe.yaml` — validation error. Iteration is managed inside the child pipe.
+`loop`/`each` on a step with `.pipe.yaml` works normally — the child pipe is invoked once per combination:
+
+```yaml
+steps:
+  - job: pipes/kpi/dau.pipe.yaml
+    each:
+      - { project: ds }
+      - { project: hn2 }
+    loop:
+      date: -7d..-1d
+```
+
+2 projects × 7 dates = 14 invocations of the child pipe. Each invocation receives the `project` and `date` values as parameter overrides.
 
 ## Pipe files
 
@@ -767,7 +779,7 @@ What is checked:
 2. **Job files** — exist on disk
 3. **Job extension** — supported (built-in or from `.piperig.yaml`), otherwise error
 4. **Nested .pipe.yaml** — exist, valid recursively
-5. **loop/each on .pipe.yaml step** → error
+5. **loop/each on .pipe.yaml step** — supported, produces multiple invocations
 6. **input** — only `env`, `json`, `args`
 7. **Time expressions** — parse correctly (`-1d`, `-2h..-1h`)
 8. **Templates** — `{label}` resolves from available parameters (`each`, `with`, `loop`, overrides)

@@ -280,7 +280,7 @@ func TestStepLevelLoopReplacesParent(t *testing.T) {
 	}
 }
 
-func TestNestedPipe(t *testing.T) {
+func TestNestedPipeWithLoop(t *testing.T) {
 	p := &pipe.Pipe{
 		With: pipe.StringMap{"src": "/data"},
 		Loop: map[string]any{"date": "-2d..-1d"},
@@ -292,19 +292,69 @@ func TestNestedPipe(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Nested pipe: always 1 call, no loop expansion
+	// Nested pipe inherits pipe-level loop: 2 dates = 2 calls
+	if len(plan.Steps[0].Calls) != 2 {
+		t.Fatalf("calls: got %d, want 2", len(plan.Steps[0].Calls))
+	}
+	for _, call := range plan.Steps[0].Calls {
+		if call.Job != "pipes/child.pipe.yaml" {
+			t.Errorf("job = %q", call.Job)
+		}
+		if call.Params["src"] != "/data" {
+			t.Errorf("src = %q", call.Params["src"])
+		}
+		if call.Params["quality"] != "90" {
+			t.Errorf("quality = %q", call.Params["quality"])
+		}
+	}
+	if plan.Steps[0].Calls[0].Params["date"] == plan.Steps[0].Calls[1].Params["date"] {
+		t.Error("expected different date values for each call")
+	}
+}
+
+func TestNestedPipeWithEach(t *testing.T) {
+	p := &pipe.Pipe{
+		Steps: []pipe.Step{
+			{
+				Job: "pipes/child.pipe.yaml",
+				Each: []pipe.StringMap{
+					{"project": "ds"},
+					{"project": "hn2"},
+				},
+			},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Steps[0].Calls) != 2 {
+		t.Fatalf("calls: got %d, want 2", len(plan.Steps[0].Calls))
+	}
+	if plan.Steps[0].Calls[0].Params["project"] != "ds" {
+		t.Errorf("call 0 project = %q, want ds", plan.Steps[0].Calls[0].Params["project"])
+	}
+	if plan.Steps[0].Calls[1].Params["project"] != "hn2" {
+		t.Errorf("call 1 project = %q, want hn2", plan.Steps[0].Calls[1].Params["project"])
+	}
+}
+
+func TestNestedPipeNoLoop(t *testing.T) {
+	p := &pipe.Pipe{
+		With: pipe.StringMap{"src": "/data"},
+		Steps: []pipe.Step{
+			{Job: "pipes/child.pipe.yaml", With: pipe.StringMap{"quality": "90"}},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(plan.Steps[0].Calls) != 1 {
 		t.Fatalf("calls: got %d, want 1", len(plan.Steps[0].Calls))
 	}
-	call := plan.Steps[0].Calls[0]
-	if call.Job != "pipes/child.pipe.yaml" {
-		t.Errorf("job = %q", call.Job)
-	}
-	if call.Params["src"] != "/data" {
-		t.Errorf("src = %q", call.Params["src"])
-	}
-	if call.Params["quality"] != "90" {
-		t.Errorf("quality = %q", call.Params["quality"])
+	if plan.Steps[0].Calls[0].Params["src"] != "/data" {
+		t.Errorf("src = %q", plan.Steps[0].Calls[0].Params["src"])
 	}
 }
 

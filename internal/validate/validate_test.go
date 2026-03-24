@@ -90,30 +90,28 @@ func TestRule4NestedMissing(t *testing.T) {
 	assertContains(t, errs, "nested pipe not found")
 }
 
-func TestRule5LoopOnNested(t *testing.T) {
+func TestLoopOnNestedAllowed(t *testing.T) {
 	p := &pipe.Pipe{
 		Steps: []pipe.Step{
 			{Job: "pipes/child.pipe.yaml", Loop: map[string]any{"date": "-1d"}},
 		},
 	}
 	errs := Validate(p, cfg, alwaysExists, nil)
-	if len(errs) == 0 {
-		t.Fatal("expected error for loop on nested pipe")
+	if len(errs) != 0 {
+		t.Errorf("unexpected errors: %v", errs)
 	}
-	assertContains(t, errs, "loop not allowed on nested pipe")
 }
 
-func TestRule5EachOnNested(t *testing.T) {
+func TestEachOnNestedAllowed(t *testing.T) {
 	p := &pipe.Pipe{
 		Steps: []pipe.Step{
 			{Job: "pipes/child.pipe.yaml", Each: []pipe.StringMap{{"a": "1"}}},
 		},
 	}
 	errs := Validate(p, cfg, alwaysExists, nil)
-	if len(errs) == 0 {
-		t.Fatal("expected error for each on nested pipe")
+	if len(errs) != 0 {
+		t.Errorf("unexpected errors: %v", errs)
 	}
-	assertContains(t, errs, "each not allowed on nested pipe")
 }
 
 func TestRule6BadInput(t *testing.T) {
