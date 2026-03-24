@@ -306,6 +306,10 @@ func mergeParams(sources ...map[string]string) map[string]string {
 			pool[k] = substituteValue(v, pool)
 		}
 	}
+	// Final pass: resolve forward references (e.g. pipe with references CLI override)
+	for k, v := range pool {
+		pool[k] = substituteValue(v, pool)
+	}
 	return pool
 }
 

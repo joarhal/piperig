@@ -355,6 +355,35 @@ func TestTemplateSameKeyFromPipeWith(t *testing.T) {
 	}
 }
 
+func TestTemplateForwardReference(t *testing.T) {
+	// pipe with references a value that comes from CLI overrides (later layer)
+	p := &pipe.Pipe{
+		With: pipe.StringMap{
+			"table": "{project}_events",
+		},
+		Steps: []pipe.Step{
+			{Job: "scripts/dau.py", With: pipe.StringMap{
+				"target": "{project}.mart_dau",
+			}},
+		},
+	}
+	overrides := map[string]string{"project": "mygame"}
+	plan, err := Expand(p, overrides, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	call := plan.Steps[0].Calls[0]
+	if call.Params["table"] != "mygame_events" {
+		t.Errorf("table = %q, want %q", call.Params["table"], "mygame_events")
+	}
+	if call.Params["target"] != "mygame.mart_dau" {
+		t.Errorf("target = %q, want %q", call.Params["target"], "mygame.mart_dau")
+	}
+	if call.Params["project"] != "mygame" {
+		t.Errorf("project = %q, want %q", call.Params["project"], "mygame")
+	}
+}
+
 func TestOverrideWins(t *testing.T) {
 	p := &pipe.Pipe{
 		With: pipe.StringMap{"quality": "80"},
