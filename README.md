@@ -477,6 +477,16 @@ Run `piperig run` without arguments to browse all pipes in your project:
 
 Type to filter by path. Toggle between **run** and **check** with arrow keys.
 
+Pipes with `hidden: true` are excluded from the picker but can still be run directly or used as nested pipes:
+
+```yaml
+description: Helper for image processing
+hidden: true
+
+steps:
+  - job: scripts/helper.py
+```
+
 ---
 
 ## Output icons
