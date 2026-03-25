@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -12,111 +12,117 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px;
+    padding: 20px;
     font-family: 'JetBrains Mono', monospace;
   }
 
-  .card {
-    background: #111113;
-    border-radius: 16px;
-    border: 1px solid #1e1e22;
+  .window {
+    background: #1a1b26;
+    border-radius: 12px;
     display: inline-block;
-    padding: 32px 40px;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.06),
+      0 20px 60px rgba(0,0,0,0.5),
+      0 0 80px rgba(122,162,247,0.03);
   }
 
-  .columns {
-    display: flex;
-    gap: 36px;
-    align-items: stretch;
-  }
-
-  .col {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .col-label {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: #34d399;
-    margin-bottom: 10px;
-  }
-
-  .yaml, .output {
-    background: #09090b;
-    border: 1px solid #1e1e22;
-    border-radius: 10px;
-    padding: 18px 22px;
-    font-size: 13px;
-    line-height: 1.75;
-    white-space: pre;
-    flex: 1;
-    color: #6b6b75;
-  }
-
-  .y-key { color: #7dd3fc; }
-  .y-val { color: #fcd34d; }
-
-  .arrow-col {
+  .titlebar {
+    background: #16161e;
+    padding: 14px 18px;
     display: flex;
     align-items: center;
-    font-size: 28px;
-    color: #2a2a30;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
   }
 
-  .t-dim { color: #5a5a63; }
-  .t-ts { color: #3a3a42; }
-  .t-bold { color: #fff; font-weight: 700; }
-  .t-ok { color: #34d399; }
-  .t-warn { color: #facc15; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-r { background: #f7768e; }
+  .dot-y { background: #e0af68; }
+  .dot-g { background: #9ece6a; }
+
+  .titlebar-text {
+    flex: 1;
+    text-align: center;
+    font-size: 11px;
+    color: #565f89;
+    letter-spacing: 0.5px;
+    margin-right: 36px;
+  }
+
+  .body {
+    padding: 20px 28px 28px;
+    font-size: 13.5px;
+    line-height: 1.7;
+    white-space: pre;
+  }
+
+  /* Prompt */
+  .ps { color: #9ece6a; }
+  .cmd { color: #c0caf5; font-weight: 700; }
+  .arg { color: #7aa2f7; }
+  .path { color: #bb9af7; }
+
+  /* YAML syntax — cat output */
+  .y { color: #565f89; }
+  .yk { color: #7aa2f7; }
+  .yv { color: #e0af68; }
+  .yp { color: #565f89; }
+
+  /* piperig output */
+  .ts { color: #3b3f52; }
+  .arrow { color: #c0caf5; font-weight: 700; }
+  .job { color: #c0caf5; font-weight: 700; }
+  .param { color: #565f89; }
+  .txt { color: #565f89; }
+  .ok { color: #9ece6a; }
+  .warn { color: #e0af68; }
+  .dur { color: #565f89; }
+  .pipe-name { color: #c0caf5; font-weight: 700; }
+  .pipe-desc { color: #565f89; font-style: italic; }
+
+  .sep {
+    display: block;
+    height: 1px;
+    background: rgba(255,255,255,0.04);
+    margin: 14px 0;
+  }
+
+  .gap { display: block; height: 6px; }
 </style>
 </head>
 <body>
-  <div class="card">
-    <div class="columns">
-      <div class="col">
-        <div class="col-label">Define</div>
-<div class="yaml"><span class="y-key">description</span>: <span class="y-val">Resize photos for last 3 days</span>
-
-<span class="y-key">loop</span>:
-  <span class="y-key">date</span>: <span class="y-val">-3d..-1d</span>
-
-<span class="y-key">each</span>:
-  - { <span class="y-key">label</span>: <span class="y-val">fullhd</span>, <span class="y-key">size</span>: <span class="y-val">1920x1080</span> }
-  - { <span class="y-key">label</span>: <span class="y-val">thumb</span>,  <span class="y-key">size</span>: <span class="y-val">128x128</span> }
-
-<span class="y-key">steps</span>:
-  - <span class="y-key">job</span>: <span class="y-val">scripts/resize.py</span>
-    <span class="y-key">retry</span>: <span class="y-val">2</span>
-  - <span class="y-key">job</span>: <span class="y-val">scripts/upload.sh</span>
-    <span class="y-key">with</span>:
-      <span class="y-key">dest</span>: <span class="y-val">s3://photos/{label}</span></div>
-      </div>
-
-      <div class="arrow-col">→</div>
-
-      <div class="col">
-        <div class="col-label">Run · 3 dates × 2 sizes = 6 calls per step</div>
-<div class="output"><span class="t-ts">09:15:32</span> <span class="t-bold">→ scripts/resize.py</span>  <span class="t-dim">label=fullhd  date=2026-03-20</span>
-<span class="t-dim">           · Resizing 48 photos...</span>
-<span class="t-ts">09:15:35</span> <span class="t-ok">✓</span> <span class="t-bold">scripts/resize.py</span>  <span class="t-dim">3.1s</span>
-
-<span class="t-ts">09:15:35</span> <span class="t-bold">→ scripts/resize.py</span>  <span class="t-dim">label=thumb  date=2026-03-20</span>
-<span class="t-dim">           · Resizing 48 photos...</span>
-<span class="t-warn">           ↻ retry 1/2</span>
-<span class="t-dim">           · Done</span>
-<span class="t-ts">09:15:38</span> <span class="t-ok">✓</span> <span class="t-bold">scripts/resize.py</span>  <span class="t-dim">2.8s</span>
-
-<span class="t-ts">09:15:38</span> <span class="t-bold">→ scripts/upload.sh</span>  <span class="t-dim">dest=s3://photos/fullhd</span>
-<span class="t-ts">09:15:39</span> <span class="t-ok">✓</span> <span class="t-bold">scripts/upload.sh</span>  <span class="t-dim">1.1s</span>
-
-<span class="t-dim">           ...</span>
-
-<span class="t-ok">✓ 12 calls  29.3s</span></div>
-      </div>
+  <div class="window">
+    <div class="titlebar">
+      <span class="dot dot-r"></span>
+      <span class="dot dot-y"></span>
+      <span class="dot dot-g"></span>
+      <span class="titlebar-text">piperig</span>
     </div>
+<div class="body"><span class="ps">❯</span> <span class="cmd">cat</span> <span class="path">resize.pipe.yaml</span>
+<span class="yk">loop</span><span class="yp">:</span>
+  <span class="yk">date</span><span class="yp">:</span> <span class="yv">-3d..-1d</span>
+<span class="yk">each</span><span class="yp">:</span>
+  <span class="yp">-</span> <span class="yp">{</span> <span class="yk">label</span><span class="yp">:</span> <span class="yv">fullhd</span><span class="yp">,</span> <span class="yk">size</span><span class="yp">:</span> <span class="yv">1920x1080</span> <span class="yp">}</span>
+  <span class="yp">-</span> <span class="yp">{</span> <span class="yk">label</span><span class="yp">:</span> <span class="yv">thumb</span><span class="yp">,</span>  <span class="yk">size</span><span class="yp">:</span> <span class="yv">128x128</span> <span class="yp">}</span>
+<span class="yk">steps</span><span class="yp">:</span>
+  <span class="yp">-</span> <span class="yk">job</span><span class="yp">:</span> <span class="yv">scripts/resize.py</span>
+    <span class="yk">retry</span><span class="yp">:</span> <span class="yv">2</span>
+  <span class="yp">-</span> <span class="yk">job</span><span class="yp">:</span> <span class="yv">scripts/upload.sh</span>
+<span class="sep"></span><span class="ps">❯</span> <span class="cmd">piperig run</span> <span class="path">resize.pipe.yaml</span>
+<span class="pipe-name">resize.pipe.yaml</span> <span class="pipe-desc">— Resize photos for last 3 days</span>
+<span class="gap"></span><span class="ts">09:15:32</span> <span class="arrow">→</span> <span class="job">scripts/resize.py</span>  <span class="param">label=fullhd  date=2026-03-22</span>
+<span class="txt">           · Resizing 48 photos...</span>
+<span class="ts">09:15:35</span> <span class="ok">✓</span> <span class="job">scripts/resize.py</span>  <span class="dur">3.1s</span>
+<span class="gap"></span><span class="ts">09:15:35</span> <span class="arrow">→</span> <span class="job">scripts/resize.py</span>  <span class="param">label=thumb  date=2026-03-22</span>
+<span class="txt">           · Resizing 48 photos...</span>
+<span class="warn">           ↻ retry 1/2</span>
+<span class="txt">           · Done</span>
+<span class="ts">09:15:38</span> <span class="ok">✓</span> <span class="job">scripts/resize.py</span>  <span class="dur">2.8s</span>
+<span class="gap"></span><span class="ts">09:15:38</span> <span class="arrow">→</span> <span class="job">scripts/upload.sh</span>  <span class="param">dest=s3://photos/fullhd</span>
+<span class="ts">09:15:39</span> <span class="ok">✓</span> <span class="job">scripts/upload.sh</span>  <span class="dur">1.1s</span>
+<span class="gap"></span><span class="txt">           ...</span>
+<span class="gap"></span><span class="ok">✓ 12 calls  29.3s</span></div>
   </div>
 </body>
 </html>

@@ -30,7 +30,7 @@ const browser = await puppeteer.launch();
 const page = await browser.newPage();
 await page.setViewport({ width: 1400, height: 900 });
 await page.goto('file://${html}');
-const el = await page.\$('.card') || await page.\$('.terminal');
+const el = await page.\$('.window') || await page.\$('.card') || await page.\$('.terminal');
 await el.screenshot({ path: '${png}', omitBackground: true });
 await browser.close();
 SCRIPT
