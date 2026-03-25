@@ -572,7 +572,7 @@ piperig validates **before** execution — no jobs run until everything checks o
 - Unknown YAML keys → error (catches typos like `rerty: 3`)
 - Job files and nested `.pipe.yaml` must exist on disk
 - Extensions must be supported (built-in or `.piperig.yaml`)
-- `loop`/`each` on nested pipe steps → error
+- `loop`/`each` on nested pipe steps — supported, produces multiple invocations
 - `input` must be `env`, `json`, or `args`
 - Time expressions must parse correctly
 - Templates `{key}` must resolve from available parameters
