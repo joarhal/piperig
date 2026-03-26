@@ -2,6 +2,7 @@ package expand
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -16,8 +17,9 @@ const defaultRetryDelay = time.Second
 // Expand transforms a Pipe into a Plan with fully resolved Calls.
 // Pure logic — no I/O, deterministic.
 func Expand(p *pipe.Pipe, overrides map[string]string, now time.Time) (*pipe.Plan, error) {
-	// Step 1: resolve time expressions in pipe-level params
+	// Step 1: expand env vars and resolve time expressions in pipe-level params
 	pipeWith := cloneMap(map[string]string(p.With))
+	expandEnvVars(pipeWith)
 	if err := resolveTimeExprs(pipeWith, now); err != nil {
 		return nil, fmt.Errorf("pipe with: %w", err)
 	}
@@ -58,8 +60,9 @@ func expandStep(
 	overrides map[string]string,
 	now time.Time,
 ) (*pipe.StepPlan, error) {
-	// Resolve time expressions in step with
+	// Expand env vars and resolve time expressions in step with
 	stepWith := cloneMap(map[string]string(step.With))
+	expandEnvVars(stepWith)
 	if err := resolveTimeExprs(stepWith, now); err != nil {
 		return nil, fmt.Errorf("with: %w", err)
 	}
@@ -133,6 +136,15 @@ func expandStep(
 	return sp, nil
 }
 
+// expandEnvVars expands $VAR and ${VAR} references in-place in a param map.
+func expandEnvVars(params map[string]string) {
+	for k, v := range params {
+		if strings.Contains(v, "$") {
+			params[k] = os.ExpandEnv(v)
+		}
+	}
+}
+
 // resolveTimeExprs resolves time expressions in-place in a param map.
 func resolveTimeExprs(params map[string]string, now time.Time) error {
 	for k, v := range params {
@@ -154,6 +166,7 @@ func resolveEachTimeExprs(each []pipe.StringMap, now time.Time) ([]map[string]st
 
 func resolveEachTimeExprsRaw(each []map[string]string, now time.Time) ([]map[string]string, error) {
 	for _, item := range each {
+		expandEnvVars(item)
 		if err := resolveTimeExprs(item, now); err != nil {
 			return nil, err
 		}

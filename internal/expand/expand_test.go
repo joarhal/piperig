@@ -1,6 +1,7 @@
 package expand
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -720,5 +721,124 @@ func TestDescriptionAndLog(t *testing.T) {
 	}
 	if len(plan.Log) != 2 || plan.Log[0] != "label" {
 		t.Errorf("log = %v", plan.Log)
+	}
+}
+
+// --- Environment variable interpolation ---
+
+func TestEnvVarInPipeWith(t *testing.T) {
+	os.Setenv("PIPERIG_TEST_HOST", "db.example.com")
+	defer os.Unsetenv("PIPERIG_TEST_HOST")
+
+	p := &pipe.Pipe{
+		With: pipe.StringMap{"host": "$PIPERIG_TEST_HOST"},
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := plan.Steps[0].Calls[0].Params["host"]
+	if got != "db.example.com" {
+		t.Errorf("host = %q, want %q", got, "db.example.com")
+	}
+}
+
+func TestEnvVarBracesSyntax(t *testing.T) {
+	os.Setenv("PIPERIG_TEST_BUCKET", "my-bucket")
+	defer os.Unsetenv("PIPERIG_TEST_BUCKET")
+
+	p := &pipe.Pipe{
+		With: pipe.StringMap{"path": "s3://${PIPERIG_TEST_BUCKET}/output"},
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := plan.Steps[0].Calls[0].Params["path"]
+	if got != "s3://my-bucket/output" {
+		t.Errorf("path = %q, want %q", got, "s3://my-bucket/output")
+	}
+}
+
+func TestEnvVarUnset(t *testing.T) {
+	os.Unsetenv("PIPERIG_TEST_MISSING")
+
+	p := &pipe.Pipe{
+		With: pipe.StringMap{"val": "$PIPERIG_TEST_MISSING"},
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := plan.Steps[0].Calls[0].Params["val"]
+	if got != "" {
+		t.Errorf("val = %q, want empty string", got)
+	}
+}
+
+func TestEnvVarInStepWith(t *testing.T) {
+	os.Setenv("PIPERIG_TEST_KEY", "secret123")
+	defer os.Unsetenv("PIPERIG_TEST_KEY")
+
+	p := &pipe.Pipe{
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh", With: pipe.StringMap{"api_key": "$PIPERIG_TEST_KEY"}},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := plan.Steps[0].Calls[0].Params["api_key"]
+	if got != "secret123" {
+		t.Errorf("api_key = %q, want %q", got, "secret123")
+	}
+}
+
+func TestEnvVarInEach(t *testing.T) {
+	os.Setenv("PIPERIG_TEST_REGION", "eu-west-1")
+	defer os.Unsetenv("PIPERIG_TEST_REGION")
+
+	p := &pipe.Pipe{
+		Each: []pipe.StringMap{
+			{"region": "$PIPERIG_TEST_REGION"},
+		},
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := plan.Steps[0].Calls[0].Params["region"]
+	if got != "eu-west-1" {
+		t.Errorf("region = %q, want %q", got, "eu-west-1")
+	}
+}
+
+func TestEnvVarNoExpansionWithoutDollar(t *testing.T) {
+	p := &pipe.Pipe{
+		With: pipe.StringMap{"plain": "no-env-here"},
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := plan.Steps[0].Calls[0].Params["plain"]
+	if got != "no-env-here" {
+		t.Errorf("plain = %q, want %q", got, "no-env-here")
 	}
 }

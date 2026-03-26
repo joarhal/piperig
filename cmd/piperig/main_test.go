@@ -258,6 +258,25 @@ steps:
 	}
 }
 
+func TestEnvVarExpansion(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/echo.sh", "#!/bin/sh\necho \"host=$HOST\"\n")
+	writeFile(t, dir, "test.pipe.yaml", `steps:
+  - job: scripts/echo.sh
+    with:
+      host: $PIPERIG_E2E_HOST
+`)
+	// Set a unique env var for the test
+	t.Setenv("PIPERIG_E2E_HOST", "db.test.local")
+	stdout, _, code := run(t, dir, "run", "test.pipe.yaml")
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0", code)
+	}
+	if !strings.Contains(stdout, "host=db.test.local") {
+		t.Errorf("expected expanded env var in output, got:\n%s", stdout)
+	}
+}
+
 func TestUnknownCommand(t *testing.T) {
 	_, stderr, code := run(t, t.TempDir(), "notacommand")
 	if code != 1 {
