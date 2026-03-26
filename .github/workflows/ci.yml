@@ -20,12 +20,6 @@ jobs:
         with:
           go-version: "1.25.0-rc.1"
 
-      - name: Generate
-        run: go generate ./...
-
-      - name: Check generated files are up to date
-        run: git diff --exit-code || (echo "::error::go generate produced changes — run 'go generate ./...' and commit" && exit 1)
-
       - name: Vet
         run: go vet ./...
 

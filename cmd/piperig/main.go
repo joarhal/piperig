@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/joarhal/piperig/internal/config"
-	"github.com/joarhal/piperig/internal/docs"
+	piperig "github.com/joarhal/piperig"
 	"github.com/joarhal/piperig/internal/expand"
 	"github.com/joarhal/piperig/internal/output"
 	"github.com/joarhal/piperig/internal/picker"
@@ -41,7 +41,7 @@ func main() {
 	case "new":
 		os.Exit(cmdNew(os.Args[2:]))
 	case "llm":
-		fmt.Print(docs.README)
+		fmt.Print(piperig.README)
 		os.Exit(0)
 	case "version":
 		fmt.Println("piperig " + version)
