@@ -356,6 +356,75 @@ func TestListEmpty(t *testing.T) {
 	}
 }
 
+func TestNoColorWithOverride(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/greet.sh", "#!/bin/sh\necho \"greeting=$GREETING\"\n")
+	writeFile(t, dir, "test.pipe.yaml", `steps:
+  - job: scripts/greet.sh
+    with:
+      greeting: default
+`)
+	stdout, _, code := run(t, dir, "run", "test.pipe.yaml", "greeting=hello", "--no-color")
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0", code)
+	}
+	if strings.Contains(stdout, "\033[") {
+		t.Errorf("expected no ANSI codes with --no-color, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "greeting=hello") {
+		t.Errorf("expected override applied, got:\n%s", stdout)
+	}
+}
+
+func TestListNonexistentDirectory(t *testing.T) {
+	_, _, code := run(t, t.TempDir(), "list", "nonexistent/")
+	if code != 1 {
+		t.Fatalf("exit code = %d, want 1 for nonexistent directory", code)
+	}
+}
+
+func TestEnvVarInLoop(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/echo.sh", "#!/bin/sh\necho \"region=$REGION\"\n")
+	writeFile(t, dir, "test.pipe.yaml", `steps:
+  - job: scripts/echo.sh
+    loop:
+      region: [$PIPERIG_E2E_R1, $PIPERIG_E2E_R2]
+`)
+	t.Setenv("PIPERIG_E2E_R1", "eu")
+	t.Setenv("PIPERIG_E2E_R2", "us")
+	stdout, _, code := run(t, dir, "run", "test.pipe.yaml")
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0", code)
+	}
+	if !strings.Contains(stdout, "region=eu") {
+		t.Errorf("expected region=eu in output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "region=us") {
+		t.Errorf("expected region=us in output, got:\n%s", stdout)
+	}
+}
+
+func TestEnvVarPlusTemplate(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/echo.sh", "#!/bin/sh\necho \"output=$OUTPUT\"\n")
+	writeFile(t, dir, "test.pipe.yaml", `with:
+  base: $PIPERIG_E2E_BASE
+steps:
+  - job: scripts/echo.sh
+    with:
+      output: "{base}/result.txt"
+`)
+	t.Setenv("PIPERIG_E2E_BASE", "/tmp/data")
+	stdout, _, code := run(t, dir, "run", "test.pipe.yaml")
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0", code)
+	}
+	if !strings.Contains(stdout, "output=/tmp/data/result.txt") {
+		t.Errorf("expected env var + template expansion, got:\n%s", stdout)
+	}
+}
+
 func TestUnknownCommand(t *testing.T) {
 	_, stderr, code := run(t, t.TempDir(), "notacommand")
 	if code != 1 {

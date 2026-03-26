@@ -202,12 +202,17 @@ func expandLoopValues(loop map[string]any, now time.Time) ([]string, [][]string,
 func expandSingleLoopValue(v any, now time.Time) ([]string, error) {
 	switch val := v.(type) {
 	case string:
+		// Expand env vars first
+		s := val
+		if strings.Contains(s, "$") {
+			s = os.ExpandEnv(s)
+		}
 		// Time expression range
-		if timeexpr.IsRange(val) {
-			return timeexpr.ExpandRange(val, now)
+		if timeexpr.IsRange(s) {
+			return timeexpr.ExpandRange(s, now)
 		}
 		// Numeric range
-		if parts := strings.SplitN(val, "..", 2); len(parts) == 2 {
+		if parts := strings.SplitN(s, "..", 2); len(parts) == 2 {
 			start, err1 := strconv.Atoi(parts[0])
 			end, err2 := strconv.Atoi(parts[1])
 			if err1 == nil && err2 == nil {
@@ -215,20 +220,23 @@ func expandSingleLoopValue(v any, now time.Time) ([]string, error) {
 			}
 		}
 		// Single time expression
-		if timeexpr.IsTimeExpr(val) {
-			resolved, err := timeexpr.Resolve(val, now)
+		if timeexpr.IsTimeExpr(s) {
+			resolved, err := timeexpr.Resolve(s, now)
 			if err != nil {
 				return nil, err
 			}
 			return []string{resolved}, nil
 		}
 		// Plain string
-		return []string{val}, nil
+		return []string{s}, nil
 
 	case []any:
 		result := make([]string, len(val))
 		for i, item := range val {
 			s := fmt.Sprint(item)
+			if strings.Contains(s, "$") {
+				s = os.ExpandEnv(s)
+			}
 			if timeexpr.IsTimeExpr(s) {
 				resolved, err := timeexpr.Resolve(s, now)
 				if err != nil {

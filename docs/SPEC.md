@@ -186,7 +186,13 @@ with:
 
 Expansion happens at the same stage as time expression resolution — before template substitution. If a variable is not set, it is replaced with an empty string (same as shell behavior).
 
-Environment variables work in all `with` sections (pipe-level, step-level) and in `each` items. They do **not** work in `loop` values — `loop` uses time ranges, numeric ranges, and explicit lists.
+Environment variables work everywhere parameters appear: `with` (pipe-level, step-level), `each` items, and `loop` values.
+
+```yaml
+loop:
+  date: $DATE_RANGE              # e.g. DATE_RANGE="-7d..-1d"
+  region: [$DEFAULT_REGION, us]  # mix env vars with literals
+```
 
 ### Time expressions
 

@@ -842,3 +842,115 @@ func TestEnvVarNoExpansionWithoutDollar(t *testing.T) {
 		t.Errorf("plain = %q, want %q", got, "no-env-here")
 	}
 }
+
+func TestEnvVarInLoopString(t *testing.T) {
+	os.Setenv("PIPERIG_TEST_RANGE", "-2d..-1d")
+	defer os.Unsetenv("PIPERIG_TEST_RANGE")
+
+	p := &pipe.Pipe{
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh", Loop: map[string]any{"date": "$PIPERIG_TEST_RANGE"}},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Steps[0].Calls) != 2 {
+		t.Fatalf("calls = %d, want 2", len(plan.Steps[0].Calls))
+	}
+}
+
+func TestEnvVarInLoopList(t *testing.T) {
+	os.Setenv("PIPERIG_TEST_EXTRA", "asia")
+	defer os.Unsetenv("PIPERIG_TEST_EXTRA")
+
+	p := &pipe.Pipe{
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh", Loop: map[string]any{
+				"region": []any{"eu", "$PIPERIG_TEST_EXTRA"},
+			}},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	calls := plan.Steps[0].Calls
+	if len(calls) != 2 {
+		t.Fatalf("calls = %d, want 2", len(calls))
+	}
+	if calls[0].Params["region"] != "eu" {
+		t.Errorf("call[0] region = %q, want %q", calls[0].Params["region"], "eu")
+	}
+	if calls[1].Params["region"] != "asia" {
+		t.Errorf("call[1] region = %q, want %q", calls[1].Params["region"], "asia")
+	}
+}
+
+func TestEnvVarPlusTemplate(t *testing.T) {
+	os.Setenv("PIPERIG_TEST_BASE", "/data/output")
+	defer os.Unsetenv("PIPERIG_TEST_BASE")
+
+	p := &pipe.Pipe{
+		With: pipe.StringMap{"base": "$PIPERIG_TEST_BASE"},
+		Each: []pipe.StringMap{
+			{"label": "fullhd"},
+		},
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh", With: pipe.StringMap{"output": "{base}/{label}.jpg"}},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := plan.Steps[0].Calls[0].Params["output"]
+	if got != "/data/output/fullhd.jpg" {
+		t.Errorf("output = %q, want %q", got, "/data/output/fullhd.jpg")
+	}
+}
+
+func TestEnvVarInLoopPlainString(t *testing.T) {
+	os.Setenv("PIPERIG_TEST_REGION", "eu-west-1")
+	defer os.Unsetenv("PIPERIG_TEST_REGION")
+
+	p := &pipe.Pipe{
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh", Loop: map[string]any{
+				"region": "$PIPERIG_TEST_REGION",
+			}},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Steps[0].Calls) != 1 {
+		t.Fatalf("calls = %d, want 1", len(plan.Steps[0].Calls))
+	}
+	got := plan.Steps[0].Calls[0].Params["region"]
+	if got != "eu-west-1" {
+		t.Errorf("region = %q, want %q", got, "eu-west-1")
+	}
+}
+
+func TestEnvVarInLoopUnset(t *testing.T) {
+	os.Unsetenv("PIPERIG_TEST_GONE")
+
+	p := &pipe.Pipe{
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh", Loop: map[string]any{
+				"x": "$PIPERIG_TEST_GONE",
+			}},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := plan.Steps[0].Calls[0].Params["x"]
+	if got != "" {
+		t.Errorf("x = %q, want empty string", got)
+	}
+}
