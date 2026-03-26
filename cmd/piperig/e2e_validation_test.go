@@ -1,0 +1,110 @@
+package main
+
+import (
+	"strings"
+	"testing"
+)
+
+func TestValidation_UnknownKey(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/hello.sh", "#!/bin/sh\necho hello\n")
+	writeFile(t, dir, "test.pipe.yaml", `foo: bar
+steps:
+  - job: scripts/hello.sh
+`)
+	_, stderr, code := run(t, dir, "run", "test.pipe.yaml")
+	if code == 0 {
+		t.Fatal("expected non-zero exit code for unknown YAML key")
+	}
+	if !strings.Contains(stderr, "unknown") || !strings.Contains(stderr, "foo") {
+		t.Errorf("expected error about unknown key 'foo', got stderr:\n%s", stderr)
+	}
+}
+
+func TestValidation_JobNotFound(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "test.pipe.yaml", `steps:
+  - job: scripts/nonexistent.sh
+`)
+	_, _, code := run(t, dir, "run", "test.pipe.yaml")
+	if code != 2 {
+		t.Fatalf("exit code = %d, want 2 (validation error)", code)
+	}
+}
+
+func TestValidation_BadExtension(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "scripts/run.xyz", "content")
+	writeFile(t, dir, "test.pipe.yaml", `steps:
+  - job: scripts/run.xyz
+`)
+	_, stderr, code := run(t, dir, "run", "test.pipe.yaml")
+	if code != 2 {
+		t.Fatalf("exit code = %d, want 2 (validation error)", code)
+	}
+	if !strings.Contains(stderr, ".xyz") {
+		t.Errorf("expected error mentioning .xyz extension, got stderr:\n%s", stderr)
+	}
+}
+
+func TestValidation_BadTimeExpr(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/hello.sh", "#!/bin/sh\necho hello\n")
+	writeFile(t, dir, "test.pipe.yaml", `steps:
+  - job: scripts/hello.sh
+    loop:
+      date: -1x
+`)
+	_, _, code := run(t, dir, "run", "test.pipe.yaml")
+	if code != 2 {
+		t.Fatalf("exit code = %d, want 2 (validation error for bad time expression)", code)
+	}
+}
+
+func TestValidation_UnresolvedTemplate(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/hello.sh", "#!/bin/sh\necho hello\n")
+	writeFile(t, dir, "test.pipe.yaml", `steps:
+  - job: scripts/hello.sh
+    with:
+      output: "{missing}/file.txt"
+`)
+	_, stderr, code := run(t, dir, "run", "test.pipe.yaml")
+	if code != 2 {
+		t.Fatalf("exit code = %d, want 2 (validation error for unresolved template)", code)
+	}
+	if !strings.Contains(stderr, "missing") {
+		t.Errorf("expected error about unresolved template 'missing', got stderr:\n%s", stderr)
+	}
+}
+
+func TestValidation_BadInputMode(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/hello.sh", "#!/bin/sh\necho hello\n")
+	writeFile(t, dir, "test.pipe.yaml", `steps:
+  - job: scripts/hello.sh
+    input: xml
+`)
+	_, _, code := run(t, dir, "run", "test.pipe.yaml")
+	if code != 2 {
+		t.Fatalf("exit code = %d, want 2 (validation error for bad input mode)", code)
+	}
+}
+
+func TestValidation_NestedObjectInWith(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/hello.sh", "#!/bin/sh\necho hello\n")
+	writeFile(t, dir, "test.pipe.yaml", `steps:
+  - job: scripts/hello.sh
+    with:
+      nested:
+        key: value
+`)
+	_, stderr, code := run(t, dir, "run", "test.pipe.yaml")
+	if code == 0 {
+		t.Fatal("expected non-zero exit code for nested object in with")
+	}
+	if !strings.Contains(stderr, "nested") {
+		t.Errorf("expected error about nested objects, got stderr:\n%s", stderr)
+	}
+}

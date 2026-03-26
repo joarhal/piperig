@@ -30,8 +30,9 @@ internal/
 1. **English only.** All code, comments, commit messages, docs, and issues in English. Public project.
 2. **SPEC.md is the source of truth.** Implementation follows the spec, not the other way around. If something in code conflicts with the spec — fix the code.
 3. **Minimal external dependencies.** stdlib + `gopkg.in/yaml.v3` + `bubbletea` for TUI + cron library for scheduler. Nothing else.
-4. **Test with `go test`.** Every package has `_test.go`. Expansion is pure logic — test it thoroughly with table-driven tests.
+4. **Test with `go test`.** Every package has `_test.go`. Expansion is pure logic — test it thoroughly with table-driven tests. Run `go test ./... -count=1` before committing.
 5. **testdata/ contains example pipes.** Tests load from there. Keep examples in sync with SPEC.md.
+6a. **Every feature must have an E2E test.** If you add a feature to the spec — add an E2E test that covers the full path: YAML → binary → stdout/exit code. No exceptions.
 6. **Process boundary.** piperig calls a subprocess, passes params via env/json/args. Exit code determines success (0) or failure (!=0). No Go plugins, no shared memory, no RPC.
 7. **Steps are sequential.** No parallelism within a pipe. One step finishes, next begins.
 8. **Fail fast.** Non-zero exit code stops the pipe (unless `allow_failure: true` on step).
@@ -66,6 +67,43 @@ assets/
 - PNGs are generated with transparent background and saved to `assets/`.
 - Run `make screenshots` to regenerate all PNGs.
 - To add a new screenshot: create `assets/terminals/<name>.html`, run `make screenshots`.
+
+## Testing
+
+Three levels of tests, all run with `go test ./...`:
+
+1. **Unit tests** — pure logic in each package (`expand/`, `validate/`, `timeexpr/`, `pipe/`, `output/`). Table-driven, deterministic, no I/O.
+2. **Integration tests** — `runner/` tests with real shell scripts from `internal/runner/testdata/scripts/`. Test subprocess execution, retry, timeout, signal handling.
+3. **E2E tests** — `cmd/piperig/` builds the binary once in `TestMain`, then each test writes temp files and runs the binary as a subprocess. Tests the full path: YAML → CLI → stdout/exit code.
+
+### E2E test structure
+
+E2E tests are split by domain — one file per area:
+
+```
+cmd/piperig/
+  main_test.go              helpers (run, writeFile, writeScript) + TestMain + basic CLI tests
+  e2e_multistep_test.go     multi-step sequential execution, fail-fast
+  e2e_iteration_test.go     loop (numeric, list, time range, cartesian), each, each+loop
+  e2e_execution_test.go     retry, timeout, allow_failure
+  e2e_input_test.go         input modes (env, json, args), direct exec
+  e2e_nested_test.go        nested pipes, parent override
+  e2e_template_test.go      template substitution from loop/each values
+  e2e_output_test.go        JSON log fields, stderr, summary, pipe header
+  e2e_validation_test.go    all validation error cases (exit code 2)
+  e2e_check_test.go         check command (directory, overrides, description)
+  e2e_config_test.go        .piperig.yaml (custom interpreters, process env)
+  e2e_schedule_test.go      serve --now, schedule overrides
+  e2e_scaffold_test.go      init/new edge cases (already exists)
+```
+
+### Rules for writing tests
+
+- **One feature per test.** Name: `TestArea_Scenario` (e.g. `TestLoop_NumericRange`).
+- **Assert exit code first**, then check stdout/stderr content.
+- **Use `check` for counting calls** — fast, no execution. Assert on `"Total: N calls"`.
+- **Use `run` for verifying output** — actual execution with real scripts.
+- **New feature = new E2E test.** Every capability from SPEC.md must have a corresponding E2E test. If a feature is in the spec but missing a test — that's a bug.
 
 # ExecPlans
 
