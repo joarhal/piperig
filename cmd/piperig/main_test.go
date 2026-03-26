@@ -220,6 +220,44 @@ func TestNewSchedule(t *testing.T) {
 	}
 }
 
+func TestRunNoColor(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/hello.sh", "#!/bin/sh\necho hello\n")
+	writeFile(t, dir, "test.pipe.yaml", `description: no-color test
+steps:
+  - job: scripts/hello.sh
+`)
+	stdout, _, code := run(t, dir, "run", "test.pipe.yaml", "--no-color")
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0", code)
+	}
+	if strings.Contains(stdout, "\033[") {
+		t.Errorf("expected no ANSI codes with --no-color, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "hello") {
+		t.Errorf("expected output to contain 'hello', got:\n%s", stdout)
+	}
+}
+
+func TestCheckNoColor(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/hello.sh", "#!/bin/sh\necho hello\n")
+	writeFile(t, dir, "test.pipe.yaml", `description: no-color check
+steps:
+  - job: scripts/hello.sh
+`)
+	stdout, _, code := run(t, dir, "check", "test.pipe.yaml", "--no-color")
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0", code)
+	}
+	if strings.Contains(stdout, "\033[") {
+		t.Errorf("expected no ANSI codes with --no-color, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "Total:") {
+		t.Errorf("expected 'Total:' in check output, got:\n%s", stdout)
+	}
+}
+
 func TestUnknownCommand(t *testing.T) {
 	_, stderr, code := run(t, t.TempDir(), "notacommand")
 	if code != 1 {

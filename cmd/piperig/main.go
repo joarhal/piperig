@@ -53,40 +53,51 @@ func main() {
 
 func usage() {
 	fmt.Fprintln(os.Stderr, `Usage:
-  piperig run <file.pipe.yaml|dir> [key=value ...]
-  piperig check <file.pipe.yaml|dir> [key=value ...]
-  piperig serve <schedule.yaml> [--now]
+  piperig run <file.pipe.yaml|dir> [key=value ...] [--no-color]
+  piperig check <file.pipe.yaml|dir> [key=value ...] [--no-color]
+  piperig serve <schedule.yaml> [--now] [--no-color]
   piperig init
   piperig new pipe|schedule <name>
   piperig version`)
 }
 
-// parseArgs splits args into target and key=value overrides.
-func parseArgs(args []string) (target string, overrides map[string]string) {
-	overrides = make(map[string]string)
-	if len(args) == 0 {
-		return "", overrides
-	}
-	target = args[0]
-	for _, arg := range args[1:] {
+// parsedArgs holds the result of parsing CLI arguments.
+type parsedArgs struct {
+	target    string
+	overrides map[string]string
+	noColor   bool
+}
+
+// parseArgs splits args into target, key=value overrides, and flags.
+func parseArgs(args []string) parsedArgs {
+	result := parsedArgs{overrides: make(map[string]string)}
+	for _, arg := range args {
+		if arg == "--no-color" {
+			result.noColor = true
+			continue
+		}
 		if k, v, ok := strings.Cut(arg, "="); ok {
-			overrides[k] = v
+			result.overrides[k] = v
+			continue
+		}
+		if result.target == "" {
+			result.target = arg
 		}
 	}
-	return target, overrides
+	return result
 }
 
 func cmdRun(args []string) int {
-	target, overrides := parseArgs(args)
-	if target == "" {
+	pa := parseArgs(args)
+	if pa.target == "" {
 		result, err := picker.Pick()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%v\n", err)
 			return 1
 		}
-		target = result.Target
+		pa.target = result.Target
 		if result.Mode == "check" {
-			return cmdCheck([]string{target})
+			return cmdCheck([]string{pa.target})
 		}
 	}
 
@@ -96,16 +107,16 @@ func cmdRun(args []string) int {
 		return 1
 	}
 
-	w := output.New(os.Stdout, output.StdoutIsTerminal())
+	w := output.New(os.Stdout, output.StdoutIsTerminal() && !pa.noColor)
 	now := time.Now()
 
-	paths, code := resolvePaths(target)
+	paths, code := resolvePaths(pa.target)
 	if code != 0 {
 		return code
 	}
 
 	for _, path := range paths {
-		if code := runSinglePipe(path, cfg, w, overrides, now); code != 0 {
+		if code := runSinglePipe(path, cfg, w, pa.overrides, now); code != 0 {
 			return code
 		}
 	}
@@ -156,8 +167,8 @@ func runSinglePipe(path string, cfg *config.Config, w *output.Writer, overrides 
 }
 
 func cmdCheck(args []string) int {
-	target, overrides := parseArgs(args)
-	if target == "" {
+	pa := parseArgs(args)
+	if pa.target == "" {
 		fmt.Fprintln(os.Stderr, "usage: piperig check <file.pipe.yaml|dir> [key=value ...]")
 		return 1
 	}
@@ -168,16 +179,16 @@ func cmdCheck(args []string) int {
 		return 1
 	}
 
-	w := output.New(os.Stdout, output.StdoutIsTerminal())
+	w := output.New(os.Stdout, output.StdoutIsTerminal() && !pa.noColor)
 	now := time.Now()
 
-	paths, code := resolvePaths(target)
+	paths, code := resolvePaths(pa.target)
 	if code != 0 {
 		return code
 	}
 
 	for _, path := range paths {
-		if code := checkSinglePipe(path, cfg, w, overrides, now); code != 0 {
+		if code := checkSinglePipe(path, cfg, w, pa.overrides, now); code != 0 {
 			return code
 		}
 	}
@@ -314,16 +325,28 @@ steps:
 
 func cmdServe(args []string) int {
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "usage: piperig serve <schedule.yaml> [--now]")
+		fmt.Fprintln(os.Stderr, "usage: piperig serve <schedule.yaml> [--now] [--no-color]")
 		return 1
 	}
 
-	schedFile := args[0]
+	schedFile := ""
 	nowMode := false
-	for _, a := range args[1:] {
-		if a == "--now" {
+	noColor := false
+	for _, a := range args {
+		switch a {
+		case "--now":
 			nowMode = true
+		case "--no-color":
+			noColor = true
+		default:
+			if schedFile == "" {
+				schedFile = a
+			}
 		}
+	}
+	if schedFile == "" {
+		fmt.Fprintln(os.Stderr, "usage: piperig serve <schedule.yaml> [--now] [--no-color]")
+		return 1
 	}
 
 	entries, err := scheduler.LoadSchedule(schedFile)
@@ -346,7 +369,7 @@ func cmdServe(args []string) int {
 		return 1
 	}
 
-	w := output.New(os.Stdout, output.StdoutIsTerminal())
+	w := output.New(os.Stdout, output.StdoutIsTerminal() && !noColor)
 
 	if nowMode {
 		if err := scheduler.ServeNow(entries, cfg, w); err != nil {
