@@ -70,10 +70,11 @@ func ValidateEntries(entries []Entry) []error {
 
 // ServeNow runs all schedule entries once and exits.
 func ServeNow(entries []Entry, cfg *config.Config, w *output.Writer) error {
+	ctx := context.Background()
 	now := time.Now()
 	var firstErr error
 	for _, e := range entries {
-		if err := runEntry(e, cfg, w, now); err != nil && firstErr == nil {
+		if err := runEntry(ctx, e, cfg, w, now); err != nil && firstErr == nil {
 			firstErr = err
 		}
 	}
@@ -92,7 +93,7 @@ func Serve(ctx context.Context, entries []Entry, cfg *config.Config, w *output.W
 		}
 		_, err := c.AddFunc(spec, func() {
 			now := time.Now()
-			if err := runEntry(entry, cfg, w, now); err != nil {
+			if err := runEntry(ctx, entry, cfg, w, now); err != nil {
 				fmt.Fprintf(os.Stderr, "schedule %s: %v\n", entry.Name, err)
 			}
 		})
@@ -107,14 +108,14 @@ func Serve(ctx context.Context, entries []Entry, cfg *config.Config, w *output.W
 	return nil
 }
 
-func runEntry(e Entry, cfg *config.Config, w *output.Writer, now time.Time) error {
+func runEntry(ctx context.Context, e Entry, cfg *config.Config, w *output.Writer, now time.Time) error {
 	for _, target := range e.Run {
 		paths, err := resolvePaths(target)
 		if err != nil {
 			return err
 		}
 		for _, path := range paths {
-			if err := runPipe(path, e.With, cfg, w, now); err != nil {
+			if err := runPipe(ctx, path, e.With, cfg, w, now); err != nil {
 				return err // fail fast within run list
 			}
 		}
@@ -122,7 +123,7 @@ func runEntry(e Entry, cfg *config.Config, w *output.Writer, now time.Time) erro
 	return nil
 }
 
-func runPipe(path string, overrides map[string]string, cfg *config.Config, w *output.Writer, now time.Time) error {
+func runPipe(ctx context.Context, path string, overrides map[string]string, cfg *config.Config, w *output.Writer, now time.Time) error {
 	p, err := pipe.Load(path)
 	if err != nil {
 		return fmt.Errorf("load %s: %w", path, err)
@@ -150,7 +151,7 @@ func runPipe(path string, overrides map[string]string, cfg *config.Config, w *ou
 		Now:          now,
 		Config:       cfg,
 	}
-	return r.RunPlan(context.Background(), plan)
+	return r.RunPlan(ctx, plan)
 }
 
 func resolvePaths(target string) ([]string, error) {
