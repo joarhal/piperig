@@ -136,6 +136,16 @@ Top-level `with` merges into every step. Step values win on conflict.
 piperig run resize.pipe.yaml quality=95 dest=/tmp/test
 ```
 
+**Environment variables.** Use `$VAR` or `${VAR}` in `with` values to pull from the process environment — keep secrets and host-specific config out of pipe files:
+
+```yaml
+with:
+  db_host: $DB_HOST
+  bucket: s3://${S3_BUCKET}/output
+```
+
+Unset variables expand to empty string. Works in `with` and `each`, not in `loop`.
+
 **Templates.** Use `{key}` to reference other parameters. Substitution pulls from the full parameter pool — `with`, `each`, `loop`, and overrides:
 
 ```yaml
@@ -427,6 +437,8 @@ Pipes with `hidden: true` are excluded from the picker but can still be run dire
 | `piperig check <file> key=value` | Check with overrides |
 | `piperig serve <schedule.yaml>` | Cron scheduler |
 | `piperig serve <schedule.yaml> --now` | Run schedule once and exit |
+| `piperig run/check/serve --no-color` | Disable colors (for CI/logs) |
+| `piperig list [directory]` | List all pipes |
 | `piperig init` | Create `.piperig.yaml` |
 | `piperig new pipe <name>` | Scaffold a `.pipe.yaml` |
 | `piperig new schedule <name>` | Scaffold a `schedule.yaml` |
