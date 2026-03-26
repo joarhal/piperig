@@ -6,6 +6,7 @@ Internal structure of piperig. Read after [SPEC.md](SPEC.md).
 
 ```
 piperig/
+├── embed.go                     # go:embed README.md for `piperig llm`
 ├── cmd/
 │   └── piperig/
 │       └── main.go              # CLI entrypoint: subcommands, wiring, exit codes
@@ -336,6 +337,7 @@ func Default() *Config        // default interpreters
 | `run` (no args) | -> picker/ |
 | `check <file>` | Load -> Validate -> Expand(overrides) -> output.Check* |
 | `check <dir>` | Scan -> for each pipe: Load -> Validate -> Expand -> output.Check* |
+| `list [dir]` | Scan -> for each pipe: Load -> print path + description (skip hidden) |
 | `serve` | -> scheduler/ |
 | `init` | config.Default() -> write .piperig.yaml |
 | `new pipe` | write a .pipe.yaml template |
@@ -405,4 +407,4 @@ Bottom-up following the dependency graph:
 | Project | piperig |
 | Description | Declarative pipeline runner. Single binary. |
 | Language | Go |
-| Last Updated | 2026-03-19 |
+| Last Updated | 2026-03-26 |

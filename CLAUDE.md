@@ -11,17 +11,18 @@ Declarative pipeline runner. Go. Single binary.
 ## Architecture
 
 ```
-cmd/piperig/main.go          CLI entrypoint
+embed.go                          go:embed README.md for `piperig llm`
+cmd/piperig/main.go               CLI entrypoint
 internal/
-  pipe/                       types (Pipe, Step, Call, Plan) + YAML parsing
-  timeexpr/                   time expressions (-1d, -2h, -1w, ranges)
-  expand/                     loop/each/template expansion → Plan
-  validate/                   10 validation rules, before execution
-  runner/                     subprocess execution, stdout JSON parsing
-  output/                     formatted terminal output (icons, colors)
-  scheduler/                  cron + every, schedule YAML
-  picker/                     TUI interactive mode (bubbletea)
-  config/                     .piperig.yaml (interpreter overrides)
+  pipe/                            types (Pipe, Step, Call, Plan) + YAML parsing
+  timeexpr/                        time expressions (-1d, -2h, -1w, ranges)
+  expand/                          loop/each/template expansion → Plan
+  validate/                        10 validation rules, before execution
+  runner/                          subprocess execution, stdout JSON parsing
+  output/                          formatted terminal output (icons, colors)
+  scheduler/                       cron + every, schedule YAML
+  picker/                          TUI interactive mode (bubbletea)
+  config/                          .piperig.yaml (interpreter overrides)
 ```
 
 ## Rules
