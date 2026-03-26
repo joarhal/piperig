@@ -381,3 +381,61 @@ func TestDirectExecNoExtension(t *testing.T) {
 		t.Fatalf("direct exec should work, got %v", err)
 	}
 }
+
+func TestTimeoutSendsSIGTERM(t *testing.T) {
+	r, buf := newTestRunner()
+	start := time.Now()
+	err := r.RunCall(context.Background(), pipe.Call{
+		Job:   scriptPath("trap_term.sh"),
+		Input: pipe.InputEnv,
+	}, 500*time.Millisecond)
+	dur := time.Since(start)
+
+	// Error expected — context deadline exceeded
+	if err == nil {
+		t.Fatal("expected error from timeout")
+	}
+	// Must complete quickly (SIGTERM handled), not wait 30s
+	if dur > 5*time.Second {
+		t.Errorf("took %v, expected quick exit after SIGTERM", dur)
+	}
+	// Script should receive SIGTERM, not SIGKILL
+	out := buf.String()
+	if !strings.Contains(out, "SIGTERM received") {
+		t.Errorf("expected script to receive SIGTERM, got:\n%s", out)
+	}
+}
+
+func TestContextCancelSendsSIGTERM(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	r, buf := newTestRunner()
+
+	done := make(chan error, 1)
+	go func() {
+		done <- r.RunCall(ctx, pipe.Call{
+			Job:   scriptPath("trap_term.sh"),
+			Input: pipe.InputEnv,
+		}, 0)
+	}()
+
+	// Let the process start, then cancel
+	time.Sleep(200 * time.Millisecond)
+	cancel()
+
+	start := time.Now()
+	err := <-done
+	dur := time.Since(start)
+
+	// Error expected — context canceled
+	if err == nil {
+		t.Fatal("expected error from context cancel")
+	}
+	// Must complete quickly
+	if dur > 5*time.Second {
+		t.Errorf("took %v, expected quick exit after SIGTERM", dur)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "SIGTERM received") {
+		t.Errorf("expected script to receive SIGTERM, got:\n%s", out)
+	}
+}

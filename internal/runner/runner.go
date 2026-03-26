@@ -127,8 +127,10 @@ func (r *Runner) RunCall(ctx context.Context, call pipe.Call, timeout time.Durat
 	cmd := exec.CommandContext(ctx, cmdName, args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Cancel = func() error {
-		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+		// Send SIGTERM first to allow graceful cleanup
+		return syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM)
 	}
+	cmd.WaitDelay = 5 * time.Second // after SIGTERM, wait 5s then SIGKILL
 
 	// Set parameters by input mode
 	switch call.Input {
