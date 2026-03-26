@@ -173,6 +173,21 @@ Top-level `with` is merged with each step's `with`. Step wins on conflict.
 
 All values in `with` — scalars only (strings, numbers, booleans). Nested objects and lists are forbidden — validation error.
 
+### Environment variable interpolation
+
+`$VAR` and `${VAR}` in `with` values are expanded from the process environment before any other processing. This allows keeping secrets and host-specific values out of pipe files:
+
+```yaml
+with:
+  db_host: $DB_HOST
+  db_pass: ${DB_PASSWORD}
+  bucket: s3://${S3_BUCKET}/output
+```
+
+Expansion happens at the same stage as time expression resolution — before template substitution. If a variable is not set, it is replaced with an empty string (same as shell behavior).
+
+Environment variables work in all `with` sections (pipe-level, step-level) and in `each` items. They do **not** work in `loop` values — `loop` uses time ranges, numeric ranges, and explicit lists.
+
 ### Time expressions
 
 piperig recognizes time expressions in values **everywhere** — in `with`, `loop`, `each`. If a value matches the format — it is resolved before passing to the job.
@@ -456,6 +471,7 @@ piperig run                          TUI: choose pipe interactively
 piperig serve <schedule.yaml>        run scheduler (cron)
 piperig check <file.pipe.yaml>       dry-check: show what will be called
 piperig check <directory/>           dry-check: all .pipe.yaml in directory
+piperig list [directory]             list all .pipe.yaml files
 piperig init                         create .piperig.yaml with defaults
 piperig new pipe <name>              create .pipe.yaml from template
 piperig new schedule <name>          create schedule.yaml from template
@@ -480,7 +496,18 @@ Parameter priority (weakest to strongest):
 4. step `with`
 5. **CLI `key=value`** — wins everything
 
-piperig flags (with `--`): reserved for future options.
+#### --no-color
+
+`--no-color` disables ANSI colors and timestamps in output. Useful for CI, logging to files, or piping to other tools.
+
+```
+piperig run pipes/daily/ --no-color
+piperig check pipes/daily/ --no-color
+```
+
+By default, colors are auto-detected: enabled when stdout is a terminal, disabled when piped. `--no-color` forces colors off regardless of terminal detection.
+
+Other piperig flags (with `--`): reserved for future options.
 
 ### piperig run (interactive)
 
@@ -571,6 +598,25 @@ Does not call jobs. Shows the full list of calls with all parameters for each.
 ```
 piperig check pipes/daily/images.pipe.yaml date=-1d quality=90
 ```
+
+### piperig list
+
+```
+$ piperig list
+
+pipes/daily/images.pipe.yaml — Resize images for the last 2 days
+pipes/daily/reports.pipe.yaml — Weekly sales report
+pipes/maintenance/backup.pipe.yaml — Database backup
+```
+
+Lists all `.pipe.yaml` files found recursively from the current directory (or from the given directory). Each line shows the path and description (if present). Pipes with `hidden: true` are excluded.
+
+```
+piperig list                         # search from cwd
+piperig list pipes/daily/            # search from specific directory
+```
+
+No TUI, no interaction — plain text, one line per pipe. Useful for scripting, `grep`, and quick overview.
 
 ### piperig new
 
@@ -685,7 +731,7 @@ Icons and colors:
 - `✓` step/pipe finish (success) — **green**
 - `✗` step/pipe finish (failure) — **red**
 
-Colors and timestamps are automatically disabled when stdout is not a terminal (piped to file, redirected).
+Colors and timestamps are automatically disabled when stdout is not a terminal (piped to file, redirected). `--no-color` forces colors off even when running in a terminal.
 
 Example output: `bash docs/log_example.sh`
 
