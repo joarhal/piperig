@@ -32,6 +32,8 @@ func main() {
 		os.Exit(cmdRun(os.Args[2:]))
 	case "check":
 		os.Exit(cmdCheck(os.Args[2:]))
+	case "list":
+		os.Exit(cmdList(os.Args[2:]))
 	case "serve":
 		os.Exit(cmdServe(os.Args[2:]))
 	case "init":
@@ -55,6 +57,7 @@ func usage() {
 	fmt.Fprintln(os.Stderr, `Usage:
   piperig run <file.pipe.yaml|dir> [key=value ...] [--no-color]
   piperig check <file.pipe.yaml|dir> [key=value ...] [--no-color]
+  piperig list [directory]
   piperig serve <schedule.yaml> [--now] [--no-color]
   piperig init
   piperig new pipe|schedule <name>
@@ -232,6 +235,47 @@ func checkSinglePipe(path string, cfg *config.Config, w *output.Writer, override
 	}
 	w.CheckTotal(plan.TotalCalls())
 
+	return 0
+}
+
+func cmdList(args []string) int {
+	dir := "."
+	if len(args) > 0 {
+		dir = args[0]
+	}
+
+	paths, err := pipe.Scan(dir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "scan: %v\n", err)
+		return 1
+	}
+	if len(paths) == 0 {
+		fmt.Fprintf(os.Stderr, "no .pipe.yaml files found in %s\n", dir)
+		return 1
+	}
+
+	cwd, _ := os.Getwd()
+
+	for _, path := range paths {
+		rel, err := filepath.Rel(cwd, path)
+		if err != nil {
+			rel = path
+		}
+
+		p, err := pipe.Load(path)
+		if err != nil {
+			continue
+		}
+		if p.Hidden {
+			continue
+		}
+
+		if p.Description != "" {
+			fmt.Printf("%s — %s\n", rel, p.Description)
+		} else {
+			fmt.Println(rel)
+		}
+	}
 	return 0
 }
 

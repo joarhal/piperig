@@ -277,6 +277,85 @@ func TestEnvVarExpansion(t *testing.T) {
 	}
 }
 
+func TestList(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/hello.sh", "#!/bin/sh\necho hello\n")
+	writeFile(t, dir, "pipes/a.pipe.yaml", `description: First pipe
+steps:
+  - job: scripts/hello.sh
+`)
+	writeFile(t, dir, "pipes/b.pipe.yaml", `description: Second pipe
+steps:
+  - job: scripts/hello.sh
+`)
+	stdout, _, code := run(t, dir, "list")
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0", code)
+	}
+	if !strings.Contains(stdout, "a.pipe.yaml") {
+		t.Errorf("expected a.pipe.yaml in output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "First pipe") {
+		t.Errorf("expected description 'First pipe' in output, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "b.pipe.yaml") {
+		t.Errorf("expected b.pipe.yaml in output, got:\n%s", stdout)
+	}
+}
+
+func TestListHiddenExcluded(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/hello.sh", "#!/bin/sh\necho hello\n")
+	writeFile(t, dir, "visible.pipe.yaml", `description: Visible
+steps:
+  - job: scripts/hello.sh
+`)
+	writeFile(t, dir, "hidden.pipe.yaml", `description: Hidden helper
+hidden: true
+steps:
+  - job: scripts/hello.sh
+`)
+	stdout, _, code := run(t, dir, "list")
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0", code)
+	}
+	if !strings.Contains(stdout, "visible.pipe.yaml") {
+		t.Errorf("expected visible pipe in output, got:\n%s", stdout)
+	}
+	if strings.Contains(stdout, "hidden.pipe.yaml") {
+		t.Errorf("hidden pipe should be excluded, got:\n%s", stdout)
+	}
+}
+
+func TestListSubdirectory(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/hello.sh", "#!/bin/sh\necho hello\n")
+	writeFile(t, dir, "pipes/daily/a.pipe.yaml", `steps:
+  - job: scripts/hello.sh
+`)
+	writeFile(t, dir, "pipes/other/b.pipe.yaml", `steps:
+  - job: scripts/hello.sh
+`)
+	stdout, _, code := run(t, dir, "list", "pipes/daily")
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0", code)
+	}
+	if !strings.Contains(stdout, "a.pipe.yaml") {
+		t.Errorf("expected a.pipe.yaml in output, got:\n%s", stdout)
+	}
+	if strings.Contains(stdout, "b.pipe.yaml") {
+		t.Errorf("b.pipe.yaml should not be in output for pipes/daily/, got:\n%s", stdout)
+	}
+}
+
+func TestListEmpty(t *testing.T) {
+	dir := t.TempDir()
+	_, _, code := run(t, dir, "list")
+	if code != 1 {
+		t.Fatalf("exit code = %d, want 1 for empty directory", code)
+	}
+}
+
 func TestUnknownCommand(t *testing.T) {
 	_, stderr, code := run(t, t.TempDir(), "notacommand")
 	if code != 1 {
