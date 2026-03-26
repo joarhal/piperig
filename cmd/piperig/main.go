@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/joarhal/piperig/internal/config"
@@ -110,6 +112,9 @@ func cmdRun(args []string) int {
 		return 1
 	}
 
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
 	w := output.New(os.Stdout, output.StdoutIsTerminal() && !pa.noColor)
 	now := time.Now()
 
@@ -119,14 +124,14 @@ func cmdRun(args []string) int {
 	}
 
 	for _, path := range paths {
-		if code := runSinglePipe(path, cfg, w, pa.overrides, now); code != 0 {
+		if code := runSinglePipe(ctx, path, cfg, w, pa.overrides, now); code != 0 {
 			return code
 		}
 	}
 	return 0
 }
 
-func runSinglePipe(path string, cfg *config.Config, w *output.Writer, overrides map[string]string, now time.Time) int {
+func runSinglePipe(ctx context.Context, path string, cfg *config.Config, w *output.Writer, overrides map[string]string, now time.Time) int {
 	p, err := pipe.Load(path)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "load: %v\n", err)
@@ -159,7 +164,7 @@ func runSinglePipe(path string, cfg *config.Config, w *output.Writer, overrides 
 		Config:       cfg,
 	}
 
-	if err := r.RunPlan(context.Background(), plan); err != nil {
+	if err := r.RunPlan(ctx, plan); err != nil {
 		if _, ok := err.(*pipe.RunError); ok {
 			return 1
 		}
@@ -426,7 +431,7 @@ func cmdServe(args []string) int {
 		return 0
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
 	fmt.Printf("piperig serve: %d schedule entries\n", len(entries))
