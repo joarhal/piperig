@@ -447,6 +447,23 @@ Pipes with `hidden: true` are excluded from the picker but can still be run dire
 ## Reference
 
 <details>
+<summary>Dotenv</summary>
+
+Optional `.env` file in the project root is loaded automatically:
+
+```
+DB_HOST=localhost
+DB_PASSWORD=secret123
+S3_BUCKET=my-bucket
+```
+
+Priority (weakest → strongest): `.env` < system environment < `.piperig.yaml env:` < `with` parameters.
+
+`.env` variables are available for `$VAR` interpolation in `with`, `each`, and `loop`. Does not require `.piperig.yaml`.
+
+</details>
+
+<details>
 <summary>Project config</summary>
 
 Optional `.piperig.yaml` at the project root:

@@ -208,9 +208,13 @@ func checkTemplates(p *pipe.Pipe, overrides map[string]string) []error {
 
 func checkTemplateValue(val string, keys map[string]bool, context string) []error {
 	var errs []error
-	matches := templateRe.FindAllStringSubmatch(val, -1)
-	for _, m := range matches {
-		key := m[1]
+	indices := templateRe.FindAllStringSubmatchIndex(val, -1)
+	for _, idx := range indices {
+		// Skip ${VAR} — that's env var interpolation, not a piperig template
+		if idx[0] > 0 && val[idx[0]-1] == '$' {
+			continue
+		}
+		key := val[idx[2]:idx[3]]
 		if !keys[key] {
 			errs = append(errs, fmt.Errorf("%s: template {%s} unresolved", context, key))
 		}

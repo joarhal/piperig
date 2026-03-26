@@ -773,6 +773,44 @@ Step-level `log` completely replaces pipe-level `log` for that step.
 
 Without `log` — JSON lines are displayed as plain text (`·`).
 
+## .env — dotenv file
+
+Optional file in the current working directory. piperig loads it automatically at startup (before any pipe processing).
+
+```
+# Database
+DB_HOST=localhost
+DB_PASSWORD=secret123
+
+# S3
+S3_BUCKET=my-bucket
+```
+
+Format:
+- `KEY=VALUE` — one variable per line
+- `KEY="VALUE"` or `KEY='VALUE'` — quotes are stripped
+- `# comment` — lines starting with `#` are ignored
+- `export KEY=VALUE` — `export` prefix is accepted and ignored
+- Empty lines are ignored
+
+Priority (weakest to strongest):
+
+```
+.env  <  system environment  <  .piperig.yaml env:  <  with parameters
+```
+
+`.env` variables **do not override** existing system environment variables. This is standard dotenv behavior — `.env` provides defaults for local development, but the real environment always wins.
+
+`.env` variables are available for `$VAR` interpolation in `with`, `each`, and `loop` values:
+
+```yaml
+with:
+  db_host: $DB_HOST        # from .env if not set in system
+  bucket: s3://${S3_BUCKET}/output
+```
+
+`.env` does not require `.piperig.yaml` to exist. They are independent.
+
 ## .piperig.yaml — project config
 
 Optional file at the project root. Two sections: `interpreters` and `env`.

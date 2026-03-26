@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 
@@ -30,9 +31,17 @@ func Default() *Config {
 	}
 }
 
-// Load reads .piperig.yaml from the current working directory.
-// If the file does not exist, it returns Default() with no error.
+// Load reads .env and .piperig.yaml from the current working directory.
+// .env variables are applied to the process environment (only if not already set).
+// If either file does not exist, it is silently skipped.
 func Load() (*Config, error) {
+	// Load .env first (lowest priority)
+	dotenv, err := loadDotEnv()
+	if err != nil {
+		return nil, fmt.Errorf(".env: %w", err)
+	}
+	applyDotEnv(dotenv)
+
 	data, err := os.ReadFile(configFile)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {

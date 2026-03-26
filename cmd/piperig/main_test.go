@@ -57,6 +57,29 @@ func run(t *testing.T, dir string, args ...string) (string, string, int) {
 	return stdout.String(), stderr.String(), code
 }
 
+// runWithEnv executes the piperig binary with extra environment variables.
+func runWithEnv(t *testing.T, dir string, env []string, args ...string) (string, string, int) {
+	t.Helper()
+	cmd := exec.Command(binary, args...)
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), env...)
+
+	var stdout, stderr strings.Builder
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	code := 0
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			code = exitErr.ExitCode()
+		} else {
+			t.Fatalf("exec error: %v", err)
+		}
+	}
+	return stdout.String(), stderr.String(), code
+}
+
 // writeFile creates a file at dir/name with the given content.
 func writeFile(t *testing.T, dir, name, content string) string {
 	t.Helper()

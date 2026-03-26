@@ -95,6 +95,7 @@ cmd/piperig/
   e2e_config_test.go        .piperig.yaml (custom interpreters, process env)
   e2e_schedule_test.go      serve --now, schedule overrides
   e2e_scaffold_test.go      init/new edge cases (already exists)
+  e2e_dotenv_test.go        .env loading, priority, interpolation
 ```
 
 ### Rules for writing tests

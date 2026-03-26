@@ -31,8 +31,9 @@ piperig/
 │   │   └── scheduler.go         # Serve(), ServeNow()
 │   ├── picker/                  # TUI interactive mode (bubbletea)
 │   │   └── picker.go            # Fuzzy search, run/check mode toggle
-│   └── config/                  # .piperig.yaml (interpreter overrides)
-│       └── config.go            # Load(), Default()
+│   └── config/                  # .piperig.yaml + .env loading
+│       ├── config.go            # Load(), Default()
+│       └── dotenv.go            # .env file parser
 ├── test/
 │   └── e2e_test.go              # Full cycle: binary → stdout/exit code
 ├── testdata/                    # Test .pipe.yaml files and scripts
