@@ -364,7 +364,7 @@ func TestUpdateQuit(t *testing.T) {
 
 	// Esc
 	m = model{}
-	result, cmd = m.Update(keyMsg(tea.KeyEsc))
+	result, _ = m.Update(keyMsg(tea.KeyEsc))
 	rm = result.(model)
 	if !rm.quit {
 		t.Error("esc should set quit")

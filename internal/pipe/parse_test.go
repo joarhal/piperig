@@ -10,8 +10,6 @@ func testdataPath(name string) string {
 	return filepath.Join("testdata", "pipes", name)
 }
 
-func intPtr(n int) *int { return &n }
-
 func TestLoadMinimal(t *testing.T) {
 	p, err := Load(testdataPath("minimal.pipe.yaml"))
 	if err != nil {
