@@ -113,6 +113,20 @@ func TestVersion(t *testing.T) {
 	}
 }
 
+func TestHelp(t *testing.T) {
+	for _, flag := range []string{"--help", "-h", "help"} {
+		t.Run(flag, func(t *testing.T) {
+			stdout, _, code := run(t, t.TempDir(), flag)
+			if code != 0 {
+				t.Fatalf("exit code = %d, want 0", code)
+			}
+			if !strings.Contains(stdout, "Usage:") {
+				t.Errorf("stdout should contain usage text, got:\n%s", stdout)
+			}
+		})
+	}
+}
+
 func TestRunSuccess(t *testing.T) {
 	dir := t.TempDir()
 	writeScript(t, dir, "scripts/hello.sh", "#!/bin/sh\necho hello\n")

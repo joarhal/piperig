@@ -30,6 +30,9 @@ func main() {
 	}
 
 	switch os.Args[1] {
+	case "-h", "--help", "help":
+		fmt.Println(usageText)
+		os.Exit(0)
 	case "run":
 		os.Exit(cmdRun(os.Args[2:]))
 	case "check":
@@ -55,15 +58,17 @@ func main() {
 	}
 }
 
-func usage() {
-	fmt.Fprintln(os.Stderr, `Usage:
+const usageText = `Usage:
   piperig run <file.pipe.yaml|dir> [key=value ...] [--no-color]
   piperig check <file.pipe.yaml|dir> [key=value ...] [--no-color]
   piperig list [directory]
   piperig serve <schedule.yaml> [--now] [--no-color]
   piperig init
   piperig new pipe|schedule <name>
-  piperig version`)
+  piperig version`
+
+func usage() {
+	fmt.Fprintln(os.Stderr, usageText)
 }
 
 // parsedArgs holds the result of parsing CLI arguments.
