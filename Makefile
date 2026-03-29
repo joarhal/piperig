@@ -1,4 +1,4 @@
-.PHONY: build test vet generate screenshots clean
+.PHONY: build install test vet generate screenshots clean
 
 VERSION ?= dev
 COMMIT  := $(shell git rev-parse --short HEAD)
@@ -8,6 +8,9 @@ LDFLAGS := -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DA
 build:
 	go generate ./...
 	go build -ldflags "$(LDFLAGS)" -o piperig ./cmd/piperig/
+
+install:
+	go install -ldflags "$(LDFLAGS)" ./cmd/piperig/
 
 test:
 	go test ./...
