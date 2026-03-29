@@ -21,7 +21,11 @@ import (
 	"github.com/joarhal/piperig/internal/validate"
 )
 
-var version = "dev"
+var (
+	version = "dev"
+	commit  = "unknown"
+	date    = "unknown"
+)
 
 func main() {
 	if len(os.Args) < 2 {
@@ -49,7 +53,7 @@ func main() {
 		fmt.Print(piperig.README)
 		os.Exit(0)
 	case "version":
-		fmt.Println("piperig " + version)
+		fmt.Printf("piperig %s (%s, %s)\n", version, commit, date)
 		os.Exit(0)
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command: %s\n", os.Args[1])
