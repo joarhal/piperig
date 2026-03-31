@@ -52,7 +52,7 @@ func main() {
 	case "llm":
 		fmt.Print(piperig.README)
 		os.Exit(0)
-	case "version":
+	case "version", "--version", "-v":
 		fmt.Printf("piperig %s (%s, %s)\n", version, commit, date)
 		os.Exit(0)
 	default:

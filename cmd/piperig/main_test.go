@@ -104,12 +104,16 @@ func writeScript(t *testing.T, dir, name, content string) string {
 }
 
 func TestVersion(t *testing.T) {
-	stdout, _, code := run(t, t.TempDir(), "version")
-	if code != 0 {
-		t.Fatalf("exit code = %d, want 0", code)
-	}
-	if !strings.Contains(stdout, "piperig") {
-		t.Errorf("stdout = %q, want version string containing 'piperig'", stdout)
+	for _, flag := range []string{"version", "--version", "-v"} {
+		t.Run(flag, func(t *testing.T) {
+			stdout, _, code := run(t, t.TempDir(), flag)
+			if code != 0 {
+				t.Fatalf("exit code = %d, want 0", code)
+			}
+			if !strings.Contains(stdout, "piperig") {
+				t.Errorf("stdout = %q, want version string containing 'piperig'", stdout)
+			}
+		})
 	}
 }
 
