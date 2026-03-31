@@ -82,7 +82,7 @@ func validateInputMode(mode pipe.InputMode, context string) error {
 	case "", pipe.InputEnv, pipe.InputJSON, pipe.InputArgs:
 		return nil
 	default:
-		return fmt.Errorf("%s: invalid input mode %q", context, mode)
+		return fmt.Errorf("%s: invalid input mode %q (valid: env, json, args)", context, mode)
 	}
 }
 
