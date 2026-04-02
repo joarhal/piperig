@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/joarhal/piperig/internal/config"
 	"github.com/joarhal/piperig/internal/pipe"
@@ -24,6 +25,7 @@ func Validate(p *pipe.Pipe, cfg *config.Config, fileExists func(string) bool, ov
 	errs = append(errs, checkInputModes(p)...)
 	errs = append(errs, checkTimeExprs(p)...)
 	errs = append(errs, checkTemplates(p, overrides)...)
+	errs = append(errs, checkDurations(p)...)
 
 	return errs
 }
@@ -203,6 +205,34 @@ func checkTemplates(p *pipe.Pipe, overrides map[string]string) []error {
 		}
 	}
 
+	return errs
+}
+
+// Rule 9: retry_delay and timeout must be valid Go durations.
+func checkDurations(p *pipe.Pipe) []error {
+	var errs []error
+	if p.RetryDelay != "" {
+		if _, err := time.ParseDuration(p.RetryDelay); err != nil {
+			errs = append(errs, fmt.Errorf("pipe: invalid retry_delay %q", p.RetryDelay))
+		}
+	}
+	if p.Timeout != "" {
+		if _, err := time.ParseDuration(p.Timeout); err != nil {
+			errs = append(errs, fmt.Errorf("pipe: invalid timeout %q", p.Timeout))
+		}
+	}
+	for i, step := range p.Steps {
+		if step.RetryDelay != "" {
+			if _, err := time.ParseDuration(step.RetryDelay); err != nil {
+				errs = append(errs, fmt.Errorf("step %d: invalid retry_delay %q", i+1, step.RetryDelay))
+			}
+		}
+		if step.Timeout != "" {
+			if _, err := time.ParseDuration(step.Timeout); err != nil {
+				errs = append(errs, fmt.Errorf("step %d: invalid timeout %q", i+1, step.Timeout))
+			}
+		}
+	}
 	return errs
 }
 

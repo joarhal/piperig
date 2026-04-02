@@ -91,6 +91,22 @@ func TestValidation_BadInputMode(t *testing.T) {
 	}
 }
 
+func TestValidation_BadTimeout(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/hello.sh", "#!/bin/sh\necho hello\n")
+	writeFile(t, dir, "test.pipe.yaml", `steps:
+  - job: scripts/hello.sh
+    timeout: "10 minutes"
+`)
+	_, stderr, code := run(t, dir, "run", "test.pipe.yaml")
+	if code != 2 {
+		t.Fatalf("exit code = %d, want 2 (validation error for bad timeout)", code)
+	}
+	if !strings.Contains(stderr, "invalid timeout") {
+		t.Errorf("expected error about invalid timeout, got stderr:\n%s", stderr)
+	}
+}
+
 func TestValidation_NestedObjectInWith(t *testing.T) {
 	dir := t.TempDir()
 	writeScript(t, dir, "scripts/hello.sh", "#!/bin/sh\necho hello\n")

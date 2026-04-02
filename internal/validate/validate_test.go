@@ -241,6 +241,41 @@ func TestMultipleErrors(t *testing.T) {
 	}
 }
 
+func TestRule9BadRetryDelayPipe(t *testing.T) {
+	p := &pipe.Pipe{
+		RetryDelay: "5 seconds",
+		Steps: []pipe.Step{
+			{Job: "scripts/run.py"},
+		},
+	}
+	errs := Validate(p, cfg, alwaysExists, nil)
+	assertContains(t, errs, "invalid retry_delay")
+}
+
+func TestRule9BadTimeoutStep(t *testing.T) {
+	p := &pipe.Pipe{
+		Steps: []pipe.Step{
+			{Job: "scripts/run.py", Timeout: "10 minutes"},
+		},
+	}
+	errs := Validate(p, cfg, alwaysExists, nil)
+	assertContains(t, errs, "invalid timeout")
+}
+
+func TestRule9ValidDurations(t *testing.T) {
+	p := &pipe.Pipe{
+		RetryDelay: "5s",
+		Timeout:    "10m",
+		Steps: []pipe.Step{
+			{Job: "scripts/run.py", RetryDelay: "500ms", Timeout: "1h"},
+		},
+	}
+	errs := Validate(p, cfg, alwaysExists, nil)
+	if len(errs) != 0 {
+		t.Errorf("expected no errors for valid durations, got %v", errs)
+	}
+}
+
 func assertContains(t *testing.T, errs []error, substr string) {
 	t.Helper()
 	for _, err := range errs {
