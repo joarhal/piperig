@@ -2,6 +2,7 @@ package expand
 
 import (
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -94,6 +95,21 @@ func TestLoopNumericRange(t *testing.T) {
 		if calls[i].Params["n"] != want {
 			t.Errorf("call[%d].n = %q, want %q", i, calls[i].Params["n"], want)
 		}
+	}
+}
+
+func TestLoop_InvertedNumericRange(t *testing.T) {
+	p := &pipe.Pipe{
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh", Loop: map[string]any{"n": "5..1"}},
+		},
+	}
+	_, err := Expand(p, nil, now)
+	if err == nil {
+		t.Fatal("expected error for inverted numeric range")
+	}
+	if !strings.Contains(err.Error(), "inverted numeric range") {
+		t.Errorf("error = %q, want it to contain 'inverted numeric range'", err)
 	}
 }
 
