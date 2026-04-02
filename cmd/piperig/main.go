@@ -278,6 +278,7 @@ func cmdList(args []string) int {
 
 		p, err := pipe.Load(path)
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "warning: %s: %v\n", rel, err)
 			continue
 		}
 		if p.Hidden {

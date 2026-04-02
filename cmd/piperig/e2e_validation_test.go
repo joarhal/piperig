@@ -124,3 +124,21 @@ func TestValidation_NestedObjectInWith(t *testing.T) {
 		t.Errorf("expected error about nested objects, got stderr:\n%s", stderr)
 	}
 }
+
+func TestList_WarnsOnBrokenFile(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "good.pipe.yaml", `steps:
+  - job: scripts/hello.sh
+`)
+	writeFile(t, dir, "broken.pipe.yaml", `not: [valid: yaml: {{`)
+	stdout, stderr, code := run(t, dir, "list", dir)
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0", code)
+	}
+	if !strings.Contains(stderr, "warning") || !strings.Contains(stderr, "broken.pipe.yaml") {
+		t.Errorf("expected warning about broken.pipe.yaml in stderr, got:\n%s", stderr)
+	}
+	if !strings.Contains(stdout, "good.pipe.yaml") {
+		t.Errorf("expected good.pipe.yaml in stdout, got:\n%s", stdout)
+	}
+}
