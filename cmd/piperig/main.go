@@ -174,7 +174,10 @@ func runSinglePipe(ctx context.Context, path string, cfg *config.Config, w *outp
 	}
 
 	if err := r.RunPlan(ctx, plan); err != nil {
-		if _, ok := err.(*pipe.RunError); ok {
+		if re, ok := err.(*pipe.RunError); ok {
+			if re.ExitCode == 2 {
+				return 2
+			}
 			return 1
 		}
 		fmt.Fprintf(os.Stderr, "run: %v\n", err)

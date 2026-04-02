@@ -58,3 +58,20 @@ steps:
 		t.Error("child with value should not appear when parent overrides")
 	}
 }
+
+func TestNestedPipe_ValidationErrorExitCode2(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/before.sh", "#!/bin/sh\necho before\n")
+	// Child pipe references a nonexistent job → validation error
+	writeFile(t, dir, "child.pipe.yaml", `steps:
+  - job: scripts/nonexistent.sh
+`)
+	writeFile(t, dir, "parent.pipe.yaml", `steps:
+  - job: scripts/before.sh
+  - job: child.pipe.yaml
+`)
+	_, _, code := run(t, dir, "run", "parent.pipe.yaml")
+	if code != 2 {
+		t.Fatalf("exit code = %d, want 2 (validation error in nested pipe)", code)
+	}
+}
