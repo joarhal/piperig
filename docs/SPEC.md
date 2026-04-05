@@ -876,6 +876,7 @@ What is checked:
 9. **Schedule** — `cron` or `every` (not both), expressions are valid
 
 10. **`with` values** — scalars only (strings, numbers, booleans), nested objects and lists are forbidden
+11. **Durations** — `retry_delay` and `timeout` parse as Go durations (`1s`, `5m`, `1h30m`)
 
 Any validation error — immediate exit with problem description. Strict policy, no warnings.
 

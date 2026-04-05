@@ -17,7 +17,7 @@ internal/
   pipe/                            types (Pipe, Step, Call, Plan) + YAML parsing
   timeexpr/                        time expressions (-1d, -2h, -1w, ranges)
   expand/                          loop/each/template expansion → Plan
-  validate/                        10 validation rules, before execution
+  validate/                        11 validation rules, before execution
   runner/                          subprocess execution, stdout JSON parsing
   output/                          formatted terminal output (icons, colors)
   scheduler/                       cron + every, schedule YAML

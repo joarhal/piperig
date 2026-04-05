@@ -20,7 +20,7 @@ piperig/
 │   │   └── timeexpr.go          # Resolve(), ExpandRange(), IsTimeExpr()
 │   ├── expand/                  # Expansion of loop/each/templates → Plan
 │   │   └── expand.go            # Expand(pipe, overrides, now) → *Plan
-│   ├── validate/                # 10 validation rules, before execution
+│   ├── validate/                # 11 validation rules, before execution
 │   │   └── validate.go          # Validate(pipe, config, fileExists) → []error
 │   ├── runner/                  # Subprocess execution
 │   │   └── runner.go            # RunPlan → RunStep → RunCall
