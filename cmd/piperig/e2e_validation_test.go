@@ -107,6 +107,22 @@ func TestValidation_BadTimeout(t *testing.T) {
 	}
 }
 
+func TestValidation_BadRetryDelay(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/hello.sh", "#!/bin/sh\necho hello\n")
+	writeFile(t, dir, "test.pipe.yaml", `steps:
+  - job: scripts/hello.sh
+    retry_delay: "5 seconds"
+`)
+	_, stderr, code := run(t, dir, "run", "test.pipe.yaml")
+	if code != 2 {
+		t.Fatalf("exit code = %d, want 2 (validation error for bad retry_delay)", code)
+	}
+	if !strings.Contains(stderr, "invalid retry_delay") {
+		t.Errorf("expected error about invalid retry_delay, got stderr:\n%s", stderr)
+	}
+}
+
 func TestValidation_NestedObjectInWith(t *testing.T) {
 	dir := t.TempDir()
 	writeScript(t, dir, "scripts/hello.sh", "#!/bin/sh\necho hello\n")
