@@ -155,7 +155,7 @@ func runSinglePipe(ctx context.Context, path string, cfg *config.Config, w *outp
 	errs := validate.Validate(p, cfg, fileExists, overrides)
 	if len(errs) > 0 {
 		ve := &pipe.ValidationError{Errors: errs}
-		fmt.Fprintln(os.Stderr, ve)
+		fmt.Fprintf(os.Stderr, "%s: %v\n", path, ve)
 		return 2
 	}
 
@@ -230,7 +230,7 @@ func checkSinglePipe(path string, cfg *config.Config, w *output.Writer, override
 	errs := validate.Validate(p, cfg, fileExists, overrides)
 	if len(errs) > 0 {
 		ve := &pipe.ValidationError{Errors: errs}
-		fmt.Fprintln(os.Stderr, ve)
+		fmt.Fprintf(os.Stderr, "%s: %v\n", path, ve)
 		return 2
 	}
 

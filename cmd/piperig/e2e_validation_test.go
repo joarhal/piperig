@@ -26,9 +26,12 @@ func TestValidation_JobNotFound(t *testing.T) {
 	writeFile(t, dir, "test.pipe.yaml", `steps:
   - job: scripts/nonexistent.sh
 `)
-	_, _, code := run(t, dir, "run", "test.pipe.yaml")
+	_, stderr, code := run(t, dir, "run", "test.pipe.yaml")
 	if code != 2 {
 		t.Fatalf("exit code = %d, want 2 (validation error)", code)
+	}
+	if !strings.Contains(stderr, "test.pipe.yaml") {
+		t.Errorf("expected pipe file path in error output, got stderr:\n%s", stderr)
 	}
 }
 
