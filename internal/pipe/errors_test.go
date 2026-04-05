@@ -47,8 +47,8 @@ func TestValidationErrorSingle(t *testing.T) {
 		Errors: []error{errors.New("step 0: missing job")},
 	}
 	got := e.Error()
-	if !strings.HasPrefix(got, "1 validation error") {
-		t.Errorf("Error() = %q, want prefix %q", got, "1 validation error")
+	if !strings.HasPrefix(got, "1 validation error:") {
+		t.Errorf("Error() = %q, want prefix %q", got, "1 validation error:")
 	}
 	if !strings.Contains(got, "  - step 0: missing job") {
 		t.Errorf("Error() = %q, want to contain %q", got, "  - step 0: missing job")

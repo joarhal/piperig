@@ -15,7 +15,11 @@ func (e *ValidationError) Error() string {
 	for i, err := range e.Errors {
 		msgs[i] = "  - " + err.Error()
 	}
-	return fmt.Sprintf("%d validation errors:\n%s", len(e.Errors), strings.Join(msgs, "\n"))
+	noun := "errors"
+	if len(e.Errors) == 1 {
+		noun = "error"
+	}
+	return fmt.Sprintf("%d validation %s:\n%s", len(e.Errors), noun, strings.Join(msgs, "\n"))
 }
 
 // RunError represents a job execution failure.
