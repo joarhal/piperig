@@ -132,7 +132,31 @@ call 2: output=<span class="accent">/data/output/thumb.jpg</span>   size=128x128
   </div>
 </section>
 
-<!-- 6: Structured output -->
+<!-- 6: Hooks -->
+<section>
+  <div class="example-label">React to results</div>
+  <p>Run a script when a step fails or succeeds. Hooks receive context via env vars and step output on stdin.</p>
+  <pre><code><span class="y-key">on_fail</span>: <span class="y-val">scripts/alert.py</span>
+<span class="y-key">on_success</span>: <span class="y-val">scripts/notify.sh</span>
+
+<span class="y-key">steps</span>:
+  - <span class="y-key">job</span>: <span class="y-val">scripts/deploy.sh</span>
+  - <span class="y-key">job</span>: <span class="y-val">scripts/cleanup.sh</span>
+    <span class="y-key">on_fail</span>: <span class="y-val">scripts/custom-alert.sh</span>   <span class="y-comment"># overrides pipe-level</span>
+  - <span class="y-key">job</span>: <span class="y-val">scripts/optional.sh</span>
+    <span class="y-key">on_fail</span>: <span class="y-val">false</span>                     <span class="y-comment"># no hook for this step</span></code></pre>
+  <div class="result">
+    <div class="result-header">Hook environment</div>
+    <div class="result-body">PIPERIG_PIPE=<span class="accent">deploy.pipe.yaml</span>
+PIPERIG_STEP=<span class="accent">scripts/deploy.sh</span>
+PIPERIG_STATUS=<span class="accent">fail</span>  <span class="t-dim"># or success / timeout</span>
+PIPERIG_EXIT_CODE=<span class="accent">1</span>
+PIPERIG_ELAPSED_MS=<span class="accent">3420</span></div>
+  </div>
+  <p class="note">Hooks also receive <code>with</code> params as env vars and step stdout+stderr on stdin.</p>
+</section>
+
+<!-- 7: Structured output -->
 <section>
   <div class="example-label">Structured output</div>
   <p>Declare <code>log</code> fields — piperig extracts them from JSON lines your scripts print to stdout.</p>
@@ -155,7 +179,7 @@ call 2: output=<span class="accent">/data/output/thumb.jpg</span>   size=128x128
   <p class="note">Plain text and JSON can be mixed freely. Without <code>log</code>, everything passes through as text.</p>
 </section>
 
-<!-- 7: Input modes -->
+<!-- 8: Input modes -->
 <section>
   <div class="example-label">Input modes</div>
   <p>Control how parameters reach your scripts.</p>
@@ -174,7 +198,7 @@ call 2: output=<span class="accent">/data/output/thumb.jpg</span>   size=128x128
   </div>
 </section>
 
-<!-- 8: Nested pipes -->
+<!-- 9: Nested pipes -->
 <section>
   <div class="example-label">Nested pipes</div>
   <p>When <code>job</code> points to a <code>.pipe.yaml</code>, piperig runs it as a child pipeline. Parent <code>with</code> overrides child parameters.</p>
@@ -186,7 +210,7 @@ call 2: output=<span class="accent">/data/output/thumb.jpg</span>   size=128x128
   - <span class="y-key">job</span>: <span class="y-val">scripts/cleanup.sh</span></code></pre>
 </section>
 
-<!-- 9: Scheduling -->
+<!-- 10: Scheduling -->
 <section>
   <div class="example-label">Schedule</div>
   <p>Run pipes on a cron schedule or fixed interval.</p>
@@ -203,7 +227,7 @@ call 2: output=<span class="accent">/data/output/thumb.jpg</span>   size=128x128
   <div class="run-line"><code>piperig serve schedule.yaml</code></div>
 </section>
 
-<!-- 10: CLI -->
+<!-- 11: CLI -->
 <section>
   <div class="example-label">CLI</div>
   <div class="cli-list">
