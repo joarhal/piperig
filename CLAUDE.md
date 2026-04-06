@@ -17,7 +17,7 @@ internal/
   pipe/                            types (Pipe, Step, Call, Plan) + YAML parsing
   timeexpr/                        time expressions (-1d, -2h, -1w, ranges)
   expand/                          loop/each/template expansion → Plan
-  validate/                        11 validation rules, before execution
+  validate/                        12 validation rules, before execution
   runner/                          subprocess execution, stdout JSON parsing
   output/                          formatted terminal output (icons, colors)
   scheduler/                       cron + every, schedule YAML
@@ -49,6 +49,7 @@ internal/
 4. **Body when needed.** If the change isn't obvious from the title, add a blank line and a short body explaining _why_.
 5. **Co-author.** Every commit includes `Co-Authored-By` for all contributors.
 6. **English only.** Commit messages in English.
+7. **No version tag without docs.** Do not tag a release until all documentation (SPEC.md, ARCHITECTURE.md, TESTING.md, README.md) is updated for the change. Docs ship in the same commit or before the tag — never after.
 
 ## Screenshots
 
@@ -96,6 +97,7 @@ cmd/piperig/
   e2e_schedule_test.go      serve --now, schedule overrides
   e2e_scaffold_test.go      init/new edge cases (already exists)
   e2e_dotenv_test.go        .env loading, priority, interpolation
+  e2e_hooks_test.go         on_fail/on_success hooks (env vars, stdin, override, false)
 ```
 
 ### Rules for writing tests
