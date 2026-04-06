@@ -299,6 +299,36 @@ steps:
 
 All three can be set at **pipe level** (applies to all steps) or **step level** (overrides).
 
+### Hooks
+
+React to step results with `on_fail` and `on_success` — scripts that run after a step completes:
+
+```yaml
+on_fail: scripts/alert.py
+on_success: scripts/notify.sh
+
+steps:
+  - job: scripts/deploy.sh
+  - job: scripts/cleanup.sh
+    on_fail: scripts/custom-alert.sh   # overrides pipe-level
+  - job: scripts/optional.sh
+    on_fail: false                     # disables hook
+```
+
+Hooks receive context as environment variables:
+
+| Variable | Example |
+|---|---|
+| `PIPERIG_PIPE` | `deploy.pipe.yaml` |
+| `PIPERIG_STEP` | `scripts/deploy.sh` |
+| `PIPERIG_STATUS` | `success` / `fail` / `timeout` |
+| `PIPERIG_EXIT_CODE` | `1` |
+| `PIPERIG_ELAPSED_MS` | `3420` |
+
+The hook also gets `with` parameters as uppercased env vars and the step's stdout+stderr on stdin — so it can inspect both the context and the output.
+
+Hooks fire once after all retries are exhausted. Hook errors are treated as normal failures. `allow_failure: true` + `on_fail` both work — the hook fires, then the pipe continues.
+
 ## Nested pipes
 
 When `job` points to a `.pipe.yaml`, piperig runs it as a child pipeline:
@@ -509,6 +539,7 @@ piperig validates **before** execution — no jobs run until everything checks o
 - Time expressions must parse correctly
 - Templates `{key}` must resolve from available parameters
 - `with` values must be scalars (no nested objects or lists)
+- Hook scripts (`on_fail`, `on_success`) must exist and have supported extensions
 
 </details>
 

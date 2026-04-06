@@ -20,7 +20,7 @@ piperig/
 │   │   └── timeexpr.go          # Resolve(), ExpandRange(), IsTimeExpr()
 │   ├── expand/                  # Expansion of loop/each/templates → Plan
 │   │   └── expand.go            # Expand(pipe, overrides, now) → *Plan
-│   ├── validate/                # 11 validation rules, before execution
+│   ├── validate/                # 12 validation rules, before execution
 │   │   └── validate.go          # Validate(pipe, config, fileExists) → []error
 │   ├── runner/                  # Subprocess execution
 │   │   └── runner.go            # RunPlan → RunStep → RunCall
@@ -131,6 +131,8 @@ type Pipe struct {
     Retry       *int              `yaml:"retry"`
     RetryDelay  string            `yaml:"retry_delay"`
     Timeout     string            `yaml:"timeout"`
+    OnFail      string            `yaml:"-"`
+    OnSuccess   string            `yaml:"-"`
     Steps       []Step            `yaml:"steps"`
 }
 
@@ -147,6 +149,10 @@ type Step struct {
     RetryDelay   string            `yaml:"retry_delay"`
     Timeout      string            `yaml:"timeout"`
     AllowFailure bool             `yaml:"allow_failure"`
+    OnFail       string            // step-level hook override
+    OnFailOff    bool              // true when "on_fail: false"
+    OnSuccess    string
+    OnSuccessOff bool
 }
 ```
 
@@ -171,6 +177,8 @@ type StepPlan struct {
     RetryDelay   time.Duration
     Timeout      time.Duration
     AllowFailure bool
+    OnFail       string            // resolved hook path, empty = no hook
+    OnSuccess    string
 }
 
 type Plan struct {
@@ -182,7 +190,7 @@ type Plan struct {
 func (p *Plan) TotalCalls() int  // computed, not stored
 ```
 
-**Normalization during parsing**: YAML values (`quality: 80`, `enabled: true`) are converted to `string` via `fmt.Sprint()`. For `Step.Loop`, `Step.Each`, `Step.Retry` which can be `false` -- custom `UnmarshalYAML`: if `false` then `LoopOff`/`EachOff`/`RetryOff = true`, if a value is present it is parsed normally.
+**Normalization during parsing**: YAML values (`quality: 80`, `enabled: true`) are converted to `string` via `fmt.Sprint()`. For `Step.Loop`, `Step.Each`, `Step.Retry`, `Step.OnFail`, `Step.OnSuccess` which can be `false` -- custom `UnmarshalYAML`: if `false` then the corresponding `Off` bool is set to true, if a value is present it is parsed normally.
 
 **Scan** -- pipe file discovery:
 
@@ -198,7 +206,7 @@ A single glob query `**/*.pipe.yaml`, no manual recursion.
 
 ```go
 type ValidationError struct { Errors []error }  // exit 2
-type RunError struct { Job string; ExitCode int; Err error }  // exit 1
+type RunError struct { Job string; ExitCode int; Timeout bool; Err error }  // exit 1
 ```
 
 ### 3.2. timeexpr/ -- time expressions
@@ -236,7 +244,7 @@ Order of operations:
 6. **Templates** -- `{key}` in values is substituted from merged params
 7. **Nested pipe steps** -- if job ends with `.pipe.yaml`, skip loop/each expansion, produce 1 Call with merged `with` params (validation already rejected loop/each on such steps)
 8. **Call formation** -- job + merged params + input mode (step then pipe then env)
-9. **Policies** -- retry (respecting `RetryOff`), timeout, allow_failure: step then pipe then defaults
+9. **Policies** -- retry (respecting `RetryOff`), timeout, allow_failure, hooks (on_fail/on_success): step then pipe then defaults
 
 ### 3.4. validate/ -- validation
 
@@ -244,7 +252,7 @@ Order of operations:
 func Validate(p *pipe.Pipe, cfg *config.Config, fileExists func(string) bool, overrides map[string]string) []error
 ```
 
-10 rules from SPEC.md. Each rule is a separate internal function. `fileExists` callback: in production uses `os.Stat`, in tests uses `func(string) bool { return true }`. `overrides` are CLI key=value pairs or schedule with, needed for template validation (rule 8). Nested `.pipe.yaml` files trigger recursive `Load()` + `Validate()`.
+12 rules from SPEC.md. Each rule is a separate internal function. `fileExists` callback: in production uses `os.Stat`, in tests uses `func(string) bool { return true }`. `overrides` are CLI key=value pairs or schedule with, needed for template validation (rule 8). Nested `.pipe.yaml` files trigger recursive `Load()` + `Validate()`.
 
 ### 3.5. runner/ -- execution
 
@@ -252,6 +260,7 @@ func Validate(p *pipe.Pipe, cfg *config.Config, fileExists func(string) bool, ov
 type Runner struct {
     Interpreters map[string]string  // ".py" → "python3.11"
     Output       *output.Writer
+    PipeName     string             // set by RunPlan, used by hooks
 }
 
 func (r *Runner) RunPlan(ctx context.Context, plan *pipe.Plan) error
@@ -259,7 +268,7 @@ func (r *Runner) RunStep(ctx context.Context, step *pipe.StepPlan) error
 func (r *Runner) RunCall(ctx context.Context, call *pipe.Call) error
 ```
 
-`RunPlan` iterates steps, `RunStep` iterates calls + retry/timeout/allow_failure, `RunCall` invokes `exec.CommandContext`.
+`RunPlan` iterates steps, `RunStep` iterates calls + retry/timeout/allow_failure + hooks, `RunCall` invokes `exec.CommandContext`. After each call, `RunStep` fires `on_fail` or `on_success` hooks if configured. Hooks receive context via env vars (`PIPERIG_PIPE`, `PIPERIG_STEP`, `PIPERIG_STATUS`, `PIPERIG_EXIT_CODE`, `PIPERIG_ELAPSED_MS`), `with` params as uppercased env vars, and step stdout+stderr on stdin.
 
 Extension to interpreter mapping. Three input modes: env (UPPERCASE keys), json (stdin), args (--key value). stdout is read line by line -- JSON lines are formatted via `output.Writer`, everything else as-is.
 
@@ -408,4 +417,4 @@ Bottom-up following the dependency graph:
 | Project | piperig |
 | Description | Declarative pipeline runner. Single binary. |
 | Language | Go |
-| Last Updated | 2026-03-26 |
+| Last Updated | 2026-04-06 |

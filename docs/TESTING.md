@@ -24,6 +24,7 @@ piperig/
 │       └── scheduler_test.go    # cron parsing, --now
 ├── test/
 │   └── e2e_test.go              # full cycle: binary → stdout/exit code
+│   (Note: E2E tests are in cmd/piperig/e2e_*_test.go)
 └── testdata/
     ├── pipes/                   # test .pipe.yaml files
     │   ├── minimal.pipe.yaml
@@ -154,6 +155,7 @@ Loads YAML from `testdata/pipes/`. Verifies struct fields after parsing.
 | `each_false.pipe.yaml` | Step.EachOff = true, Step.Each = nil |
 | `loop_false.pipe.yaml` | Step.LoopOff = true, Step.Loop = nil |
 | `retry.pipe.yaml` | Step.Retry = &3, other Step.RetryOff = true |
+| `hooks.pipe.yaml` | Pipe.OnFail/OnSuccess, Step.OnFail override, Step.OnFailOff/OnSuccessOff |
 | `input_json.pipe.yaml` | Pipe.Input = "json", Step.Input = "args" |
 | `with_only.pipe.yaml` | description field parsed correctly |
 | `with_only.pipe.yaml` | log: ["label", "file"] parsed as []string |
@@ -278,6 +280,10 @@ Table-driven. Each test: `Pipe struct` + `overrides` + `now` → expected `*Plan
 | allow_failure | — | allow_failure: true | AllowFailure: true |
 | retry_delay default | retry: 3 | — | RetryDelay: 1s |
 | retry_delay override | retry_delay: 5s | retry_delay: 10s | RetryDelay: 10s |
+| hook inherit | on_fail: alert.sh | — | OnFail: alert.sh |
+| hook override | on_fail: alert.sh | on_fail: custom.sh | OnFail: custom.sh |
+| hook off | on_fail: alert.sh | OnFailOff | OnFail: "" |
+| hook no default | — | — | OnFail: "", OnSuccess: "" |
 
 ### validate/
 
@@ -299,6 +305,11 @@ func Validate(p *pipe.Pipe, cfg *config.Config, fileExists func(string) bool, ov
 | 8 | Unresolved template | `with: {out: {missing}/f}` | template {missing} unresolved |
 | 8b | Template resolved via override | override `missing=val` | no error |
 | 9 | Schedule cron+every | cron + every both set | specify cron or every, not both |
+| 12 | Hook file not found | `on_fail: missing.sh` | file not found |
+| 12 | Hook bad extension | `on_success: hook.xyz` | unsupported extension |
+| 12 | Hook is .pipe.yaml | `on_fail: child.pipe.yaml` | hooks cannot be .pipe.yaml |
+| 12 | Hook valid | `on_fail: alert.sh` | no error |
+| 12 | Hook no extension | `on_fail: bin/alert` | no error (direct exec) |
 | 10 | Nested object in with | `with: {a: {b: c}}` | with values must be scalars |
 
 **Additional:**
@@ -345,6 +356,10 @@ Integration tests with real scripts from `testdata/scripts/`.
 | stdout json | json_lines.py + log fields | output.JSON called for JSON lines |
 | stderr | stderr.sh | output.Stderr called |
 | nested pipe | parent → child.pipe.yaml | child executed, parent with as overrides |
+| on_fail hook | exit1.sh + on_fail hook | hook fires, receives env vars |
+| on_success hook | exit0.sh + on_success hook | hook fires |
+| hook stdin | job with output + on_fail hook | hook receives output on stdin |
+| hook error | hook exits 1 | pipe fails |
 
 ### output/
 
