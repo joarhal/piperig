@@ -382,6 +382,26 @@ func applyPolicies(sp *pipe.StepPlan, step pipe.Step, p *pipe.Pipe) {
 
 	// AllowFailure
 	sp.AllowFailure = step.AllowFailure
+
+	// OnFail
+	switch {
+	case step.OnFailOff:
+		sp.OnFail = ""
+	case step.OnFail != "":
+		sp.OnFail = step.OnFail
+	default:
+		sp.OnFail = p.OnFail
+	}
+
+	// OnSuccess
+	switch {
+	case step.OnSuccessOff:
+		sp.OnSuccess = ""
+	case step.OnSuccess != "":
+		sp.OnSuccess = step.OnSuccess
+	default:
+		sp.OnSuccess = p.OnSuccess
+	}
 }
 
 func buildDims(eachLen int, loopKeys []string, loopVals [][]string) string {

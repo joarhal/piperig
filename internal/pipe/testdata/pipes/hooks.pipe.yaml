@@ -1,0 +1,10 @@
+on_fail: scripts/alert.py
+on_success: scripts/notify.sh
+
+steps:
+  - job: scripts/resize.py
+  - job: scripts/upload.sh
+    on_fail: scripts/upload-alert.sh
+    on_success: false
+  - job: scripts/cleanup.sh
+    on_fail: false

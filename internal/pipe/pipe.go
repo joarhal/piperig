@@ -28,6 +28,8 @@ type Pipe struct {
 	Retry       *int           `yaml:"-"`
 	RetryDelay  string         `yaml:"-"`
 	Timeout     string         `yaml:"-"`
+	OnFail      string         `yaml:"-"`
+	OnSuccess   string         `yaml:"-"`
 	Steps       []Step         `yaml:"-"`
 }
 
@@ -48,6 +50,10 @@ type Step struct {
 	RetryDelay   string         `yaml:"retry_delay"`
 	Timeout      string         `yaml:"timeout"`
 	AllowFailure bool           `yaml:"allow_failure"`
+	OnFail       string         `yaml:"-"`
+	OnFailOff    bool           `yaml:"-"`
+	OnSuccess    string         `yaml:"-"`
+	OnSuccessOff bool           `yaml:"-"`
 }
 
 // Call is the central type produced by expansion and consumed by runner.
@@ -67,6 +73,8 @@ type StepPlan struct {
 	RetryDelay   time.Duration
 	Timeout      time.Duration
 	AllowFailure bool
+	OnFail       string
+	OnSuccess    string
 }
 
 // Plan is the result of expanding an entire pipe.

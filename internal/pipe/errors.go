@@ -26,6 +26,7 @@ func (e *ValidationError) Error() string {
 type RunError struct {
 	Job      string
 	ExitCode int
+	Timeout  bool
 	Err      error
 }
 

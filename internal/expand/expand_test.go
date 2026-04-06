@@ -970,3 +970,77 @@ func TestEnvVarInLoopUnset(t *testing.T) {
 		t.Errorf("x = %q, want empty string", got)
 	}
 }
+
+func TestHookInheritFromPipe(t *testing.T) {
+	p := &pipe.Pipe{
+		OnFail:    "scripts/alert.sh",
+		OnSuccess: "scripts/notify.sh",
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].OnFail != "scripts/alert.sh" {
+		t.Errorf("OnFail = %q, want %q", plan.Steps[0].OnFail, "scripts/alert.sh")
+	}
+	if plan.Steps[0].OnSuccess != "scripts/notify.sh" {
+		t.Errorf("OnSuccess = %q, want %q", plan.Steps[0].OnSuccess, "scripts/notify.sh")
+	}
+}
+
+func TestHookStepOverride(t *testing.T) {
+	p := &pipe.Pipe{
+		OnFail: "scripts/alert.sh",
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh", OnFail: "scripts/custom-alert.sh"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].OnFail != "scripts/custom-alert.sh" {
+		t.Errorf("OnFail = %q, want %q", plan.Steps[0].OnFail, "scripts/custom-alert.sh")
+	}
+}
+
+func TestHookOff(t *testing.T) {
+	p := &pipe.Pipe{
+		OnFail:    "scripts/alert.sh",
+		OnSuccess: "scripts/notify.sh",
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh", OnFailOff: true, OnSuccessOff: true},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].OnFail != "" {
+		t.Errorf("OnFail = %q, want empty", plan.Steps[0].OnFail)
+	}
+	if plan.Steps[0].OnSuccess != "" {
+		t.Errorf("OnSuccess = %q, want empty", plan.Steps[0].OnSuccess)
+	}
+}
+
+func TestHookNoDefault(t *testing.T) {
+	p := &pipe.Pipe{
+		Steps: []pipe.Step{
+			{Job: "scripts/run.sh"},
+		},
+	}
+	plan, err := Expand(p, nil, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Steps[0].OnFail != "" {
+		t.Errorf("OnFail = %q, want empty", plan.Steps[0].OnFail)
+	}
+	if plan.Steps[0].OnSuccess != "" {
+		t.Errorf("OnSuccess = %q, want empty", plan.Steps[0].OnSuccess)
+	}
+}

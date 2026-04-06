@@ -26,6 +26,7 @@ func Validate(p *pipe.Pipe, cfg *config.Config, fileExists func(string) bool, ov
 	errs = append(errs, checkTimeExprs(p)...)
 	errs = append(errs, checkTemplates(p, overrides)...)
 	errs = append(errs, checkDurations(p)...)
+	errs = append(errs, checkHooks(p, cfg, fileExists)...)
 
 	return errs
 }
@@ -231,6 +232,40 @@ func checkDurations(p *pipe.Pipe) []error {
 			if _, err := time.ParseDuration(step.Timeout); err != nil {
 				errs = append(errs, fmt.Errorf("step %d: invalid timeout %q", i+1, step.Timeout))
 			}
+		}
+	}
+	return errs
+}
+
+// Rule 12: hook scripts exist and have supported extensions.
+func checkHooks(p *pipe.Pipe, cfg *config.Config, fileExists func(string) bool) []error {
+	var errs []error
+	errs = append(errs, validateHookPath(p.OnFail, "on_fail", "pipe", cfg, fileExists)...)
+	errs = append(errs, validateHookPath(p.OnSuccess, "on_success", "pipe", cfg, fileExists)...)
+	for i, step := range p.Steps {
+		prefix := fmt.Sprintf("step %d", i+1)
+		errs = append(errs, validateHookPath(step.OnFail, "on_fail", prefix, cfg, fileExists)...)
+		errs = append(errs, validateHookPath(step.OnSuccess, "on_success", prefix, cfg, fileExists)...)
+	}
+	return errs
+}
+
+func validateHookPath(path, hookName, context string, cfg *config.Config, fileExists func(string) bool) []error {
+	if path == "" {
+		return nil
+	}
+	var errs []error
+	if strings.HasSuffix(path, ".pipe.yaml") {
+		errs = append(errs, fmt.Errorf("%s %s: hooks cannot be .pipe.yaml files: %s", context, hookName, path))
+		return errs
+	}
+	if !fileExists(path) {
+		errs = append(errs, fmt.Errorf("%s %s: file not found: %s", context, hookName, path))
+	}
+	ext := filepath.Ext(path)
+	if ext != "" {
+		if _, ok := cfg.Interpreters[ext]; !ok {
+			errs = append(errs, fmt.Errorf("%s %s: unsupported extension %q", context, hookName, ext))
 		}
 	}
 	return errs

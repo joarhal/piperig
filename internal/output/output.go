@@ -187,11 +187,26 @@ func (w *Writer) CheckPipe(name, description string) {
 // CheckStep prints a step summary for check output.
 func (w *Writer) CheckStep(n int, step pipe.StepPlan) {
 	callCount := len(step.Calls)
+	hookSuffix := formatHookSuffix(step)
 	if step.Dims != "" {
-		fmt.Fprintf(w.w, "  Step %d: %s × %s = %d calls\n", n, step.Job, step.Dims, callCount)
+		fmt.Fprintf(w.w, "  Step %d: %s × %s = %d calls%s\n", n, step.Job, step.Dims, callCount, hookSuffix)
 	} else {
-		fmt.Fprintf(w.w, "  Step %d: %s = %d calls\n", n, step.Job, callCount)
+		fmt.Fprintf(w.w, "  Step %d: %s = %d calls%s\n", n, step.Job, callCount, hookSuffix)
 	}
+}
+
+func formatHookSuffix(step pipe.StepPlan) string {
+	var hooks []string
+	if step.OnFail != "" {
+		hooks = append(hooks, "on_fail: "+step.OnFail)
+	}
+	if step.OnSuccess != "" {
+		hooks = append(hooks, "on_success: "+step.OnSuccess)
+	}
+	if len(hooks) == 0 {
+		return ""
+	}
+	return "  [" + strings.Join(hooks, ", ") + "]"
 }
 
 // CheckCall prints an individual call for check output.

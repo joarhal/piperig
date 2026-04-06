@@ -94,6 +94,10 @@ func (p *Pipe) UnmarshalYAML(node *yaml.Node) error {
 			p.RetryDelay = val.Value
 		case "timeout":
 			p.Timeout = val.Value
+		case "on_fail":
+			p.OnFail = val.Value
+		case "on_success":
+			p.OnSuccess = val.Value
 		case "steps":
 			if err := val.Decode(&p.Steps); err != nil {
 				return fmt.Errorf("steps: %w", err)
@@ -167,6 +171,18 @@ func (s *Step) UnmarshalYAML(node *yaml.Node) error {
 					return fmt.Errorf("retry: %w", err)
 				}
 				s.Retry = &n
+			}
+		case "on_fail":
+			if val.Kind == yaml.ScalarNode && val.Tag == "!!bool" {
+				s.OnFailOff = true
+			} else {
+				s.OnFail = val.Value
+			}
+		case "on_success":
+			if val.Kind == yaml.ScalarNode && val.Tag == "!!bool" {
+				s.OnSuccessOff = true
+			} else {
+				s.OnSuccess = val.Value
 			}
 		default:
 			return fmt.Errorf("unknown key %q", key.Value)

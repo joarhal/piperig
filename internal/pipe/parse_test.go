@@ -284,6 +284,54 @@ func TestLoadHiddenDefault(t *testing.T) {
 	}
 }
 
+func TestLoadHooks(t *testing.T) {
+	p, err := Load(testdataPath("hooks.pipe.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Pipe-level hooks
+	if p.OnFail != "scripts/alert.py" {
+		t.Errorf("pipe OnFail: got %q, want %q", p.OnFail, "scripts/alert.py")
+	}
+	if p.OnSuccess != "scripts/notify.sh" {
+		t.Errorf("pipe OnSuccess: got %q, want %q", p.OnSuccess, "scripts/notify.sh")
+	}
+
+	// Step 0: inherits (no step-level hooks)
+	s0 := p.Steps[0]
+	if s0.OnFail != "" {
+		t.Errorf("step[0] OnFail: got %q, want empty", s0.OnFail)
+	}
+	if s0.OnFailOff {
+		t.Error("step[0] OnFailOff: got true, want false")
+	}
+	if s0.OnSuccess != "" {
+		t.Errorf("step[0] OnSuccess: got %q, want empty", s0.OnSuccess)
+	}
+
+	// Step 1: overrides on_fail, disables on_success
+	s1 := p.Steps[1]
+	if s1.OnFail != "scripts/upload-alert.sh" {
+		t.Errorf("step[1] OnFail: got %q, want %q", s1.OnFail, "scripts/upload-alert.sh")
+	}
+	if s1.OnSuccessOff != true {
+		t.Error("step[1] OnSuccessOff: got false, want true")
+	}
+	if s1.OnSuccess != "" {
+		t.Errorf("step[1] OnSuccess: got %q, want empty", s1.OnSuccess)
+	}
+
+	// Step 2: disables on_fail
+	s2 := p.Steps[2]
+	if !s2.OnFailOff {
+		t.Error("step[2] OnFailOff: got false, want true")
+	}
+	if s2.OnFail != "" {
+		t.Errorf("step[2] OnFail: got %q, want empty", s2.OnFail)
+	}
+}
+
 func TestLoadInvalidYAML(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bad.pipe.yaml")

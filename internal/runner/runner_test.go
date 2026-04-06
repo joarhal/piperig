@@ -33,7 +33,7 @@ func TestRunCallSuccess(t *testing.T) {
 	r, _ := newTestRunner()
 	err := r.RunCall(context.Background(), pipe.Call{
 		Job: scriptPath("exit0.sh"), Input: pipe.InputEnv,
-	}, 0)
+	}, 0, nil, nil)
 	if err != nil {
 		t.Fatalf("expected success, got %v", err)
 	}
@@ -43,7 +43,7 @@ func TestRunCallFailure(t *testing.T) {
 	r, _ := newTestRunner()
 	err := r.RunCall(context.Background(), pipe.Call{
 		Job: scriptPath("exit1.sh"), Input: pipe.InputEnv,
-	}, 0)
+	}, 0, nil, nil)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -62,7 +62,7 @@ func TestRunCallEnvMode(t *testing.T) {
 		Job:    scriptPath("echo_env.sh"),
 		Params: map[string]string{"src": "/data", "quality": "80"},
 		Input:  pipe.InputEnv,
-	}, 0)
+	}, 0, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +81,7 @@ func TestRunCallJSONMode(t *testing.T) {
 		Job:    scriptPath("read_json.sh"),
 		Params: map[string]string{"src": "/data"},
 		Input:  pipe.InputJSON,
-	}, 0)
+	}, 0, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +97,7 @@ func TestRunCallArgsMode(t *testing.T) {
 		Job:    scriptPath("echo_args.sh"),
 		Params: map[string]string{"key": "value"},
 		Input:  pipe.InputArgs,
-	}, 0)
+	}, 0, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,7 +111,7 @@ func TestRunCallTimeout(t *testing.T) {
 	r, _ := newTestRunner()
 	err := r.RunCall(context.Background(), pipe.Call{
 		Job: scriptPath("slow.sh"), Input: pipe.InputEnv,
-	}, 500*time.Millisecond)
+	}, 500*time.Millisecond, nil, nil)
 	if err == nil {
 		t.Fatal("expected timeout error")
 	}
@@ -196,7 +196,7 @@ func TestStdoutTextAndJSON(t *testing.T) {
 	r.Output.SetLog([]string{"label", "file", "size"})
 	err := r.RunCall(context.Background(), pipe.Call{
 		Job: scriptPath("json_lines.sh"), Input: pipe.InputEnv,
-	}, 0)
+	}, 0, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,7 +218,7 @@ func TestStderr(t *testing.T) {
 	r, buf := newTestRunner()
 	err := r.RunCall(context.Background(), pipe.Call{
 		Job: scriptPath("stderr.sh"), Input: pipe.InputEnv,
-	}, 0)
+	}, 0, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -275,7 +275,7 @@ func TestRunNestedDepthLimit(t *testing.T) {
 	err := r.RunCall(context.Background(), pipe.Call{
 		Job:   "testdata/pipes/self.pipe.yaml",
 		Input: pipe.InputEnv,
-	}, 0)
+	}, 0, nil, nil)
 	if err == nil {
 		t.Fatal("expected depth limit error")
 	}
@@ -300,7 +300,7 @@ func TestConfigEnvInjected(t *testing.T) {
 
 	err := r.RunCall(context.Background(), pipe.Call{
 		Job: scriptPath("print_env.sh"), Input: pipe.InputEnv,
-	}, 0)
+	}, 0, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -330,7 +330,7 @@ func TestConfigEnvWithJSONMode(t *testing.T) {
 		Job:    scriptPath("print_env.sh"),
 		Params: map[string]string{"src": "/data"},
 		Input:  pipe.InputJSON,
-	}, 0)
+	}, 0, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -357,7 +357,7 @@ func TestConfigEnvWithArgsMode(t *testing.T) {
 		Job:    scriptPath("print_env.sh"),
 		Params: map[string]string{"key": "value"},
 		Input:  pipe.InputArgs,
-	}, 0)
+	}, 0, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -376,7 +376,7 @@ func TestDirectExecNoExtension(t *testing.T) {
 	r, _ := newTestRunner()
 	err := r.RunCall(context.Background(), pipe.Call{
 		Job: binPath, Input: pipe.InputEnv,
-	}, 0)
+	}, 0, nil, nil)
 	if err != nil {
 		t.Fatalf("direct exec should work, got %v", err)
 	}
@@ -388,7 +388,7 @@ func TestTimeoutSendsSIGTERM(t *testing.T) {
 	err := r.RunCall(context.Background(), pipe.Call{
 		Job:   scriptPath("trap_term.sh"),
 		Input: pipe.InputEnv,
-	}, 500*time.Millisecond)
+	}, 500*time.Millisecond, nil, nil)
 	dur := time.Since(start)
 
 	// Error expected — context deadline exceeded
@@ -415,7 +415,7 @@ func TestContextCancelSendsSIGTERM(t *testing.T) {
 		done <- r.RunCall(ctx, pipe.Call{
 			Job:   scriptPath("trap_term.sh"),
 			Input: pipe.InputEnv,
-		}, 0)
+		}, 0, nil, nil)
 	}()
 
 	// Let the process start, then cancel

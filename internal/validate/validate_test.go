@@ -276,6 +276,77 @@ func TestRule9ValidDurations(t *testing.T) {
 	}
 }
 
+func TestRule12HookFileNotFound(t *testing.T) {
+	p := &pipe.Pipe{
+		OnFail: "scripts/missing.sh",
+		Steps: []pipe.Step{
+			{Job: "scripts/run.py"},
+		},
+	}
+	exists := func(path string) bool { return path != "scripts/missing.sh" }
+	errs := Validate(p, cfg, exists, nil)
+	assertContains(t, errs, "file not found")
+}
+
+func TestRule12HookBadExtension(t *testing.T) {
+	p := &pipe.Pipe{
+		OnSuccess: "scripts/hook.xyz",
+		Steps: []pipe.Step{
+			{Job: "scripts/run.py"},
+		},
+	}
+	errs := Validate(p, cfg, alwaysExists, nil)
+	assertContains(t, errs, "unsupported extension")
+}
+
+func TestRule12HookPipeYamlRejected(t *testing.T) {
+	p := &pipe.Pipe{
+		OnFail: "pipes/child.pipe.yaml",
+		Steps: []pipe.Step{
+			{Job: "scripts/run.py"},
+		},
+	}
+	errs := Validate(p, cfg, alwaysExists, nil)
+	assertContains(t, errs, "hooks cannot be .pipe.yaml")
+}
+
+func TestRule12StepHookValidation(t *testing.T) {
+	p := &pipe.Pipe{
+		Steps: []pipe.Step{
+			{Job: "scripts/run.py", OnFail: "scripts/missing.sh"},
+		},
+	}
+	errs := Validate(p, cfg, func(path string) bool { return path != "scripts/missing.sh" }, nil)
+	assertContains(t, errs, "file not found")
+}
+
+func TestRule12HookValid(t *testing.T) {
+	p := &pipe.Pipe{
+		OnFail:    "scripts/alert.sh",
+		OnSuccess: "scripts/notify.py",
+		Steps: []pipe.Step{
+			{Job: "scripts/run.py"},
+		},
+	}
+	errs := Validate(p, cfg, alwaysExists, nil)
+	if len(errs) != 0 {
+		t.Errorf("expected no errors for valid hooks, got %v", errs)
+	}
+}
+
+func TestRule12HookNoExtensionDirectExec(t *testing.T) {
+	p := &pipe.Pipe{
+		OnFail: "bin/alert",
+		Steps: []pipe.Step{
+			{Job: "scripts/run.py"},
+		},
+	}
+	errs := Validate(p, cfg, alwaysExists, nil)
+	if len(errs) != 0 {
+		t.Errorf("no-extension hook should be valid (direct exec), got %v", errs)
+	}
+}
+
 func assertContains(t *testing.T, errs []error, substr string) {
 	t.Helper()
 	for _, err := range errs {

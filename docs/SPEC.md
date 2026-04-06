@@ -468,6 +468,50 @@ steps:
 
 By default `allow_failure: false` — an error stops the pipe.
 
+### Hooks — on_fail, on_success
+
+Hooks run a script in response to a step result. Two hooks: `on_fail` (step failed, including timeout) and `on_success` (step exited 0). The value is a path to a script — resolved by extension, same as `job`.
+
+```yaml
+on_fail: scripts/alert.py
+on_success: scripts/notify.sh
+
+steps:
+  - job: scripts/resize.py               # inherits both hooks from pipe
+  - job: scripts/upload.sh
+    on_fail: scripts/upload-alert.sh      # overrides pipe-level on_fail
+  - job: scripts/cleanup.sh
+    on_fail: false                        # no on_fail hook
+```
+
+**Levels:** pipe-level and step-level. Step-level overrides pipe-level. `false` disables the hook explicitly.
+
+**Context passed to the hook:**
+
+Environment variables:
+
+| Variable | Example | Description |
+|---|---|---|
+| `PIPERIG_PIPE` | `images.pipe.yaml` | pipe filename |
+| `PIPERIG_STEP` | `resize` | step name |
+| `PIPERIG_STATUS` | `success` / `fail` / `timeout` | step result |
+| `PIPERIG_EXIT_CODE` | `1` | step exit code |
+| `PIPERIG_ELAPSED_MS` | `3420` | step execution time in ms |
+
+`with` parameters: the hook receives the same parameters the step was called with, using the same `input` mode (env/json/args).
+
+stdin: the hook receives the step's combined stdout+stderr on stdin. The hook can read it or ignore it.
+
+**Hook output:** the hook's stdout and stderr are displayed in the terminal, same as any job output. `log` fields do not apply to hooks.
+
+**Retry + hooks:** if a step has `retry`, hooks fire only after all retries are exhausted (on_fail) or when the step eventually succeeds (on_success). Individual retry attempts do not trigger hooks.
+
+**Error in hook:** treated as a normal failure. If the hook returns non-zero — the pipe stops (fail fast), same as any other step. To ignore hook errors — handle exit codes inside the hook script.
+
+**allow_failure + on_fail:** if a step has `allow_failure: true` and fails, `on_fail` is still called. `allow_failure` controls pipe flow, hooks react to the step result — they are independent.
+
+**Nested pipes:** pipe-level hooks apply to the step that invokes the child pipe, not to steps inside the child. The child pipe has its own hooks.
+
 ## CLI
 
 ```
@@ -597,7 +641,11 @@ Pipe: images.pipe.yaml (Resize images for the last 2 days)
   Total: 19 calls
 ```
 
-Does not call jobs. Shows the full list of calls with all parameters for each.
+Does not call jobs. Shows the full list of calls with all parameters for each. If a step has hooks, they are shown in the step header:
+
+```
+  Step 2: scripts/resize.py × 4 each × 2 dates = 8 calls  [on_fail: scripts/alert.py]
+```
 
 `check` accepts `key=value` just like `run` — for preview with overrides:
 
@@ -877,6 +925,7 @@ What is checked:
 
 10. **`with` values** — scalars only (strings, numbers, booleans), nested objects and lists are forbidden
 11. **Durations** — `retry_delay` and `timeout` parse as Go durations (`1s`, `5m`, `1h30m`)
+12. **Hooks** — `on_fail` and `on_success` values are valid script paths (exist on disk, supported extension) or `false`
 
 Any validation error — immediate exit with problem description. Strict policy, no warnings.
 
