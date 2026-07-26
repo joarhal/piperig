@@ -17,3 +17,14 @@ func IsTerminal(fd uintptr) bool {
 func StdoutIsTerminal() bool {
 	return IsTerminal(os.Stdout.Fd())
 }
+
+// UseColor reports whether colored output should be used. Color is disabled
+// when the --no-color flag is set, when the NO_COLOR environment variable is
+// present and non-empty (see https://no-color.org), or when stdout is not a
+// terminal.
+func UseColor(noColorFlag bool) bool {
+	if noColorFlag || os.Getenv("NO_COLOR") != "" {
+		return false
+	}
+	return StdoutIsTerminal()
+}

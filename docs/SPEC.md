@@ -557,6 +557,12 @@ piperig check pipes/daily/ --no-color
 
 By default, colors are auto-detected: enabled when stdout is a terminal, disabled when piped. `--no-color` forces colors off regardless of terminal detection.
 
+Colors are also disabled when the `NO_COLOR` environment variable is set to any non-empty value, following the [NO_COLOR](https://no-color.org) convention. This lets you disable colors globally without passing the flag on every command:
+
+```
+NO_COLOR=1 piperig run pipes/daily/
+```
+
 Other piperig flags (with `--`): reserved for future options.
 
 ### piperig run (interactive)
@@ -785,7 +791,7 @@ Icons and colors:
 - `✓` step/pipe finish (success) — **green**
 - `✗` step/pipe finish (failure) — **red**
 
-Colors and timestamps are automatically disabled when stdout is not a terminal (piped to file, redirected). `--no-color` forces colors off even when running in a terminal.
+Colors and timestamps are automatically disabled when stdout is not a terminal (piped to file, redirected). `--no-color` forces colors off even when running in a terminal, as does setting the `NO_COLOR` environment variable to a non-empty value ([no-color.org](https://no-color.org)).
 
 Example output: `bash docs/log_example.sh`
 

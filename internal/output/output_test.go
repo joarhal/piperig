@@ -616,3 +616,18 @@ func TestCheckCallSortedParams(t *testing.T) {
 		t.Errorf("got %q, want %q", buf.String(), want)
 	}
 }
+
+func TestUseColor(t *testing.T) {
+	// The --no-color flag always disables color.
+	t.Setenv("NO_COLOR", "")
+	if UseColor(true) {
+		t.Error("expected --no-color flag to disable color")
+	}
+
+	// A non-empty NO_COLOR env var disables color regardless of the flag
+	// (see https://no-color.org).
+	t.Setenv("NO_COLOR", "1")
+	if UseColor(false) {
+		t.Error("expected NO_COLOR env var to disable color")
+	}
+}

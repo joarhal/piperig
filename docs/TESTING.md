@@ -390,6 +390,7 @@ Snapshot tests. Call Writer methods with `color=false` (deterministic), compare 
 
 One test with `color=true` — verifies presence of ANSI escape codes.
 One test with `color=false` — clean text without escapes.
+`TestUseColor` — verifies `--no-color` and the `NO_COLOR` env var both disable color.
 
 **SetLog:**
 

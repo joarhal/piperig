@@ -26,7 +26,8 @@ piperig/
 │   │   └── runner.go            # RunPlan → RunStep → RunCall
 │   ├── output/                  # Formatted terminal output
 │   │   ├── output.go            # Writer with Start/Text/JSON/Ok/Fail + Check* methods
-│   │   └── color.go             # ANSI colors, isatty via inline syscall
+│   │   ├── color.go             # ANSI colors
+│   │   └── terminal.go          # isatty via inline syscall, UseColor (honors --no-color + NO_COLOR)
 │   ├── scheduler/               # Cron + every, schedule YAML
 │   │   └── scheduler.go         # Serve(), ServeNow()
 │   ├── picker/                  # TUI interactive mode (bubbletea)

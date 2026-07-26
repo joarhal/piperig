@@ -299,6 +299,25 @@ steps:
 	}
 }
 
+func TestRunNoColorEnv(t *testing.T) {
+	dir := t.TempDir()
+	writeScript(t, dir, "scripts/hello.sh", "#!/bin/sh\necho hello\n")
+	writeFile(t, dir, "test.pipe.yaml", `description: NO_COLOR env test
+steps:
+  - job: scripts/hello.sh
+`)
+	stdout, _, code := runWithEnv(t, dir, []string{"NO_COLOR=1"}, "run", "test.pipe.yaml")
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0", code)
+	}
+	if strings.Contains(stdout, "\033[") {
+		t.Errorf("expected no ANSI codes with NO_COLOR set, got:\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "hello") {
+		t.Errorf("expected output to contain 'hello', got:\n%s", stdout)
+	}
+}
+
 func TestEnvVarExpansion(t *testing.T) {
 	dir := t.TempDir()
 	writeScript(t, dir, "scripts/echo.sh", "#!/bin/sh\necho \"host=$HOST\"\n")

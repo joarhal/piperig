@@ -468,6 +468,7 @@ Pipes with `hidden: true` are excluded from the picker but can still be run dire
 | `piperig serve <schedule.yaml>` | Cron scheduler |
 | `piperig serve <schedule.yaml> --now` | Run schedule once and exit |
 | `piperig run/check/serve --no-color` | Disable colors (for CI/logs) |
+| `NO_COLOR=1 piperig run <file>` | Disable colors via [NO_COLOR](https://no-color.org) env var |
 | `piperig list [directory]` | List all pipes |
 | `piperig init` | Create `.piperig.yaml` |
 | `piperig new pipe <name>` | Scaffold a `.pipe.yaml` |

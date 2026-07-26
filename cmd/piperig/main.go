@@ -124,7 +124,7 @@ func cmdRun(args []string) int {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	w := output.New(os.Stdout, output.StdoutIsTerminal() && !pa.noColor)
+	w := output.New(os.Stdout, output.UseColor(pa.noColor))
 	now := time.Now()
 
 	paths, code := resolvePaths(pa.target)
@@ -199,7 +199,7 @@ func cmdCheck(args []string) int {
 		return 1
 	}
 
-	w := output.New(os.Stdout, output.StdoutIsTerminal() && !pa.noColor)
+	w := output.New(os.Stdout, output.UseColor(pa.noColor))
 	now := time.Now()
 
 	paths, code := resolvePaths(pa.target)
@@ -431,7 +431,7 @@ func cmdServe(args []string) int {
 		return 1
 	}
 
-	w := output.New(os.Stdout, output.StdoutIsTerminal() && !noColor)
+	w := output.New(os.Stdout, output.UseColor(noColor))
 
 	if nowMode {
 		if err := scheduler.ServeNow(entries, cfg, w); err != nil {
